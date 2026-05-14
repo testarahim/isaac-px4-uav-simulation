@@ -122,11 +122,39 @@ driver   : nvidia-driver-595 - distro non-free recommended
 driver   : xserver-xorg-video-nouveau - distro free builtin
 ```
 
+Driver package availability check:
+
+```bash
+apt-cache policy nvidia-driver-550 nvidia-driver-550-server nvidia-driver-595
+```
+
+Relevant result:
+
+```text
+nvidia-driver-550:
+  Installed: (none)
+  Candidate: 550.163.01-0ubuntu0.22.04.2
+
+nvidia-driver-550-server:
+  Installed: (none)
+  Candidate: 550.163.01-0ubuntu0.22.04.2
+
+nvidia-driver-595:
+  Installed: (none)
+  Candidate: 595.58.03-0ubuntu0.22.04.1
+```
+
+Conclusion:
+
+- The Pegasus-tested `550.163.01` driver is available through Ubuntu packages as
+  `nvidia-driver-550`.
+- Use `nvidia-driver-550` as the first installation candidate.
+- Keep `nvidia-driver-595` as a fallback candidate if Isaac Sim validation fails
+  or if the 550 driver does not load correctly on this workstation.
+
 Next action:
 
-- Check whether the Pegasus-tested `550.163.01` driver is available for this
-  Ubuntu 22.04.5 / kernel 6.8 workstation.
-- Install that version if available and compatible.
+- Install `nvidia-driver-550`.
 - Reboot after driver installation.
 - Verify with `nvidia-smi`.
 - If the tested driver is unavailable or fails validation, install a driver that
@@ -141,3 +169,16 @@ Next action:
   Isaac Sim version requirements before attempting the simulator setup.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
+
+## References
+
+- NVIDIA Isaac Sim 5.1.0 installation requirements:
+  <https://docs.isaacsim.omniverse.nvidia.com/5.1.0/installation/requirements.html>
+- Pegasus Simulator installation guide:
+  <https://pegasussimulator.github.io/PegasusSimulator/source/setup/installation.html>
+- PX4 documentation:
+  <https://docs.px4.io/>
+- QGroundControl documentation:
+  <https://docs.qgroundcontrol.com/>
+- MAVProxy documentation:
+  <https://ardupilot.org/mavproxy/>
