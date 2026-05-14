@@ -1,0 +1,48 @@
+# Local collaboration notes
+WORKING_RULES.md
+
+# Logs and temporary command output
+*.log
+logs/
+tmp/
+temp/
+scratch/
+
+# Python local artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Downloaded installers and archives
+downloads/
+installers/
+*.AppImage
+*.run
+*.deb
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Third-party source trees and build outputs
+third_party/
+PX4-Autopilot/
+build/
+dist/
+target/
+
+# Simulator and tool caches
+.cache/
+isaac-sim-cache/
+ov/
+_isaac_sim/
+
+# Raw evidence drafts; curate final evidence before committing
+evidence/raw/
+*.mp4
+*.mkv
+*.webm
