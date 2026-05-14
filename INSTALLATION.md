@@ -12,7 +12,9 @@ remaining open items.
 | OS | Ubuntu 22.04.5 LTS (`jammy`) |
 | Kernel | Linux 6.8.0-111-generic x86_64 |
 | GPU | NVIDIA GeForce RTX 3070, detected by `lspci` as `GA104 [GeForce RTX 3070]` |
-| NVIDIA tooling | `nvidia-smi` was not available at initial inspection |
+| NVIDIA tooling | `nvidia-smi` validated from the host terminal after driver repair |
+| NVIDIA driver | 580.142 |
+| CUDA reported by NVIDIA-SMI | 13.0 |
 | Python | Python 3.10.12 |
 | Git | Git 2.34.1, installed after initial inspection |
 
@@ -34,8 +36,8 @@ Decision:
   compatibility checks fail, fall back to an Isaac Sim 5.1.0-compatible driver
   at or above `580.65.06`; on this host, Ubuntu currently recommends
   `nvidia-driver-595`.
-- After installation, verify the active driver with `nvidia-smi` and record the
-  exact driver version here.
+- Final active driver is `580.142`, which satisfies the Isaac Sim 5.1.0 documented
+  Linux driver requirement of `580.65.06` or newer.
 
 ## Initial Repository State
 
@@ -216,32 +218,38 @@ nvidia
         Kernel modules: nvidiafb, nouveau, nvidia_drm, nvidia
 ```
 
-Open issue:
-
-- `nvidia-smi` still failed to communicate with the NVIDIA driver after recovery,
-  despite Secure Boot being disabled and the `nvidia` kernel module being loaded.
-- The likely cause is a mixed NVIDIA package state between the originally targeted
-  550 metapackage and the active 580 kernel/user-space packages.
-- Next planned recovery step is to make the 580 driver stack consistent with:
+The active NVIDIA package state was then made consistent with:
 
 ```bash
 sudo apt install --reinstall nvidia-driver-580 nvidia-dkms-580 nvidia-utils-580
 sudo reboot
 ```
 
-Next action:
+Final validation from the host terminal:
 
-- Reinstall the 580 driver stack so the active kernel module, utilities, and
-  user-space packages are consistent.
-- Reboot after driver repair.
-- Verify with `nvidia-smi`.
+```bash
+nvidia-smi
+```
+
+Relevant result:
+
+```text
+NVIDIA-SMI 580.142
+Driver Version: 580.142
+CUDA Version: 13.0
+GPU: NVIDIA GeForce RTX 3070
+Memory: 8192 MiB
+```
+
+Current status:
+
+- NVIDIA driver is installed and validated from the host terminal.
+- Use driver `580.142` for the Isaac Sim installation path.
 
 ## Current Blockers And Next Checks
 
-- NVIDIA driver status must be resolved because `nvidia-smi` was missing during
-  initial inspection.
-- Isaac Sim is GPU-intensive; the RTX 3070 should be evaluated against the selected
-  Isaac Sim version requirements before attempting the simulator setup.
+- Isaac Sim installation is the next major setup step now that the NVIDIA driver
+  is validated on the host.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
 
