@@ -52,7 +52,7 @@ Decision:
 
 | Tool | Version / Status |
 | --- | --- |
-| Isaac Sim | Not installed yet |
+| Isaac Sim | 5.1.0 standalone workstation package extracted to `~/isaacsim` |
 | Pegasus Simulator | Not installed yet |
 | PX4 | Not installed yet |
 | QGroundControl | Not installed yet |
@@ -246,10 +246,67 @@ Current status:
 - NVIDIA driver is installed and validated from the host terminal.
 - Use driver `580.142` for the Isaac Sim installation path.
 
+### Isaac Sim
+
+Disk space check:
+
+```bash
+df -h ~
+```
+
+Result:
+
+```text
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/nvme0n1p5  288G   15G  259G   6% /
+```
+
+Installation method:
+
+- Isaac Sim is installed outside the repository because it is a large third-party
+  binary dependency.
+- The official Isaac Sim 5.1.0 standalone workstation zip was downloaded and
+  extracted from the host terminal.
+
+Commands used:
+
+```bash
+mkdir -p ~/Downloads/isaac-sim
+wget -O ~/Downloads/isaac-sim/isaac-sim-standalone-5.1.0-linux-x86_64.zip https://download.isaacsim.omniverse.nvidia.com/isaac-sim-standalone-5.1.0-linux-x86_64.zip
+unzip ~/Downloads/isaac-sim/isaac-sim-standalone-5.1.0-linux-x86_64.zip -d ~/isaacsim
+```
+
+Download fallback:
+
+- If the direct `wget` download fails, use the official Isaac Sim download page
+  from the references section and download the Linux x86_64 workstation package
+  for Isaac Sim 5.1.0 manually.
+- After manual download, extract the zip to the same target path:
+
+```bash
+unzip ~/Downloads/isaac-sim/isaac-sim-standalone-5.1.0-linux-x86_64.zip -d ~/isaacsim
+```
+
+Extraction validation:
+
+```bash
+ls -la ~/isaacsim
+```
+
+Relevant result:
+
+```text
+isaac-sim.compatibility_check.sh
+isaac-sim.selector.sh
+isaac-sim.sh
+python.sh
+VERSION
+warmup.sh
+```
+
 ## Current Blockers And Next Checks
 
-- Isaac Sim installation is the next major setup step now that the NVIDIA driver
-  is validated on the host.
+- Isaac Sim compatibility check and first launch are the next major setup steps.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
 
