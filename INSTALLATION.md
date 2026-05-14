@@ -53,7 +53,7 @@ Decision:
 | Tool | Version / Status |
 | --- | --- |
 | Isaac Sim | 5.1.0 standalone workstation package extracted to `~/isaacsim` |
-| Pegasus Simulator | Not installed yet |
+| Pegasus Simulator | Cloned to `~/PegasusSimulator`; extension directory present |
 | PX4 | Not installed yet |
 | QGroundControl | Not installed yet |
 | MAVProxy | Not installed yet |
@@ -400,11 +400,74 @@ Warnings observed:
 - `No module named 'rclpy'` was printed for the system ROS Python import, then
   Isaac Sim loaded its internal `rclpy` for ROS Humble successfully.
 
+### Pegasus Simulator
+
+Installation method:
+
+- Pegasus Simulator is installed outside the repository because it is a third-party
+  dependency.
+- The repository was cloned from the official Pegasus Simulator GitHub repository.
+
+Commands used:
+
+```bash
+cd ~
+git clone https://github.com/PegasusSimulator/PegasusSimulator.git
+```
+
+Validation:
+
+```bash
+ls -la ~/PegasusSimulator
+ls -la ~/PegasusSimulator/extensions
+```
+
+Relevant result:
+
+```text
+~/PegasusSimulator
+  docs/
+  examples/
+  extensions/
+  link_app.sh
+  README.md
+  tools/
+
+~/PegasusSimulator/extensions
+  pegasus.simulator/
+```
+
+Environment variables:
+
+- Pegasus documentation recommends using Isaac Sim's bundled Python environment.
+- This repository provides `configs/isaacsim_env.sh`, adapted from the Pegasus
+  installation guide, to configure Isaac Sim paths and define an `isaac_run`
+  helper.
+
+Temporary shell setup:
+
+```bash
+source /home/test/Desktop/Case-Study/configs/isaacsim_env.sh
+isaac_run --help
+```
+
+Optional persistent shell setup:
+
+```bash
+echo 'source /home/test/Desktop/Case-Study/configs/isaacsim_env.sh' >> ~/.bashrc
+```
+
+Next action:
+
+- Source `configs/isaacsim_env.sh` and verify `isaac_run`.
+- Add `~/PegasusSimulator/extensions` as an Isaac Sim extension search path.
+- Enable the `pegasus.simulator` extension.
+
 ## Current Blockers And Next Checks
 
-- Pegasus Simulator installation is the next major setup step, with the known
-  limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0
-  requires 10 GB.
+- Pegasus extension configuration inside Isaac Sim is the next major setup step,
+  with the known limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim
+  5.1.0 requires 10 GB.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
 
