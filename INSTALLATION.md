@@ -364,10 +364,47 @@ Decision:
   document the failure point and next step: retry on a workstation with at least
   10 GB VRAM.
 
+First launch:
+
+```bash
+~/isaacsim/isaac-sim.sh
+```
+
+Result:
+
+- Isaac Sim Full 5.1.0 launched and opened a new stage.
+- The UI was initially slow to respond, but controls became clickable after the
+  application finished loading.
+- This first launch delay is acceptable for this workstation and may be related
+  to initial extension loading, shader/cache warmup, or the documented VRAM
+  limitation.
+- A screenshot of the successful first launch should be saved as
+  `evidence/isaac-sim-first-launch.png`.
+
+Relevant terminal log:
+
+```text
+Isaac Sim Full Version: 5.1.0-rc.19
+rclpy loaded
+app ready
+Isaac Sim Full App is loaded.
+```
+
+Warnings observed:
+
+- Multiple `omni.isaac.*` extension deprecation warnings were printed. These are
+  startup warnings from bundled Isaac Sim extensions, not blockers for this
+  challenge setup.
+- `Unable to detect Omniverse Cache Server` was printed. This may affect IO
+  performance, but the application still launched successfully.
+- `No module named 'rclpy'` was printed for the system ROS Python import, then
+  Isaac Sim loaded its internal `rclpy` for ROS Humble successfully.
+
 ## Current Blockers And Next Checks
 
-- Isaac Sim first launch is the next major setup step, with the known limitation
-  that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0 requires 10 GB.
+- Pegasus Simulator installation is the next major setup step, with the known
+  limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0
+  requires 10 GB.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
 
