@@ -152,14 +152,89 @@ Conclusion:
 - Keep `nvidia-driver-595` as a fallback candidate if Isaac Sim validation fails
   or if the 550 driver does not load correctly on this workstation.
 
+First installation attempt:
+
+```bash
+sudo apt install nvidia-driver-550
+```
+
+Result:
+
+- The installation entered Ubuntu's Secure Boot / Machine Owner Key (MOK)
+  enrollment flow because Secure Boot was enabled.
+- The installation was interrupted before the NVIDIA driver setup fully completed.
+- After reboot, the desktop started in a low-resolution fallback mode
+  (`1024x768`) and display resolution could not be changed from Settings.
+
+Recovery:
+
+- Secure Boot was disabled in BIOS/UEFI. The first BIOS change was not saved,
+  so the issue persisted until Secure Boot was disabled and saved correctly.
+- The interrupted package state was recovered with:
+
+```bash
+sudo dpkg --configure -a
+```
+
+- After package recovery, the driver installation command reported:
+
+```text
+nvidia-driver-550 is already the newest version (550.163.01-0ubuntu0.22.04.2).
+0 upgraded, 0 newly installed, 0 to remove and 367 not upgraded.
+```
+
+Observed post-recovery state:
+
+- Although `nvidia-driver-550` was installed as a metapackage, the active NVIDIA
+  packages and kernel module were from the 580 series.
+- `dpkg -l` showed installed 580 packages including `nvidia-driver-580`,
+  `nvidia-dkms-580`, `nvidia-kernel-common-580`, and `libnvidia-*580`.
+- `modinfo nvidia` reported kernel module version `580.142`.
+- This `580.142` version is above the Isaac Sim 5.1.0 documented Linux driver
+  requirement of `580.65.06`.
+
+Validation commands run after recovery:
+
+```bash
+mokutil --sb-state
+lsmod | grep -E 'nvidia|nouveau'
+lspci -k | grep -A 4 -E 'VGA|3D|NVIDIA'
+```
+
+Relevant results:
+
+```text
+SecureBoot disabled
+
+nvidia_uvm
+nvidia_drm
+nvidia_modeset
+nvidia
+
+05:00.0 VGA compatible controller: NVIDIA Corporation GA104 [GeForce RTX 3070]
+        Kernel driver in use: nvidia
+        Kernel modules: nvidiafb, nouveau, nvidia_drm, nvidia
+```
+
+Open issue:
+
+- `nvidia-smi` still failed to communicate with the NVIDIA driver after recovery,
+  despite Secure Boot being disabled and the `nvidia` kernel module being loaded.
+- The likely cause is a mixed NVIDIA package state between the originally targeted
+  550 metapackage and the active 580 kernel/user-space packages.
+- Next planned recovery step is to make the 580 driver stack consistent with:
+
+```bash
+sudo apt install --reinstall nvidia-driver-580 nvidia-dkms-580 nvidia-utils-580
+sudo reboot
+```
+
 Next action:
 
-- Install `nvidia-driver-550`.
-- Reboot after driver installation.
+- Reinstall the 580 driver stack so the active kernel module, utilities, and
+  user-space packages are consistent.
+- Reboot after driver repair.
 - Verify with `nvidia-smi`.
-- If the tested driver is unavailable or fails validation, install a driver that
-  satisfies Isaac Sim 5.1.0 requirements, using Ubuntu's recommended
-  `nvidia-driver-595` as the fallback candidate.
 
 ## Current Blockers And Next Checks
 
