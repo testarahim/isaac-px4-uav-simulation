@@ -304,9 +304,70 @@ VERSION
 warmup.sh
 ```
 
+Compatibility check:
+
+```bash
+~/isaacsim/isaac-sim.compatibility_check.sh
+```
+
+Relevant result:
+
+```text
+Driver Version: 580.142
+Graphics API: Vulkan
+GPU: NVIDIA GeForce RTX 3070
+GPU active: Yes
+GPU memory: 8438 MB
+OS: Ubuntu 22.04.5 LTS
+Kernel: 6.8.0-111-generic
+Processor: AMD Ryzen 5 5600 6-Core Processor
+Cores: 6
+Logical cores: 12
+Total memory: 32011 MB
+```
+
+Detailed checker result:
+
+```text
+Driver version: supported
+GPU 0: supported
+GPU 0 VRAM: not enough
+VRAM total: 8.59 GB
+VRAM minimum: 10 GB
+CPU processor: supported
+CPU cores: good
+RAM: enough (more is recommended)
+Storage: enough (more is recommended)
+Operating system: supported
+Display: available
+System checking result: FAILED
+```
+
+Warning observed:
+
+```text
+IOMMU is enabled.
+On bare-metal Linux systems, CUDA and the display driver do not support
+IOMMU-enabled PCIe peer to peer memory copy.
+```
+
+Decision:
+
+- Continue with a minimal Isaac Sim first launch attempt because the checker
+  detected the RTX 3070 as active with Vulkan, but document the workstation as
+  below the Isaac Sim 5.1.0 recommended/minimum VRAM requirement.
+- Keep the VRAM limit as the main known hardware limitation for this setup.
+- Keep the IOMMU warning as a secondary known risk. If Isaac Sim shows image
+  corruption, instability, or GPU-related runtime failures, disable AMD-Vi/IOMMU
+  from BIOS or with kernel parameters and rerun the compatibility check.
+- If the full Pegasus/Isaac Sim workflow cannot run reliably on this machine,
+  document the failure point and next step: retry on a workstation with at least
+  10 GB VRAM.
+
 ## Current Blockers And Next Checks
 
-- Isaac Sim compatibility check and first launch are the next major setup steps.
+- Isaac Sim first launch is the next major setup step, with the known limitation
+  that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0 requires 10 GB.
 - PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
   not installed yet.
 
