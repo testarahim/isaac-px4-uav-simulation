@@ -463,13 +463,34 @@ Next action:
 - Add `~/PegasusSimulator/extensions` as an Isaac Sim extension search path.
 - Enable the `pegasus.simulator` extension.
 
+Extension launch validation:
+
+```bash
+source /home/test/Desktop/Case-Study/configs/isaacsim_env.sh
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator
+```
+
+Result:
+
+- Isaac Sim launched with the Pegasus extension path.
+- The `Pegasus Simulator` panel was visible in Isaac Sim.
+- In the `Pegasus Simulator` tab, `Load Scene` was used with the default
+  environment selected.
+- In the `Pegasus Simulator` tab, `Load Vehicle` was used with vehicle model
+  `Iris` and vehicle ID `0`.
+- The default Iris/quadcopter vehicle was visible in the loaded scene.
+- The Pegasus panel showed PX4 configuration fields, including PX4 path,
+  airframe, scene selection, geographic coordinates, and vehicle selection.
+- A screenshot of the successful Pegasus extension launch should be saved as
+  `evidence/pegasus-extension-launch.png`.
+
 ## Current Blockers And Next Checks
 
-- Pegasus extension configuration inside Isaac Sim is the next major setup step,
-  with the known limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim
-  5.1.0 requires 10 GB.
-- PX4, Pegasus, QGroundControl, MAVProxy, and verification-script dependencies are
-  not installed yet.
+- PX4 installation/configuration is the next major setup step, with the known
+  limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0
+  requires 10 GB.
+- QGroundControl, MAVProxy, and verification-script dependencies are not installed
+  yet.
 
 ## References
 
