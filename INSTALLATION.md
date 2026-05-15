@@ -55,7 +55,7 @@ Decision:
 | Isaac Sim | 5.1.0 standalone workstation package extracted to `~/isaacsim` |
 | Pegasus Simulator | Cloned to `~/PegasusSimulator`; extension directory present |
 | PX4 | v1.16.0 cloned to `~/PX4-Autopilot`; Ubuntu setup completed; SITL starts |
-| QGroundControl | Not installed yet |
+| QGroundControl | Not installed yet; explicit MAVProxy UDP link procedure documented |
 | MAVProxy | 1.8.74 installed with user-local pip |
 
 ## Installation Log
@@ -763,11 +763,78 @@ Interpretation:
 - The preflight/fence warnings do not block MAVProxy routing validation; they
   will be revisited only if they prevent arming or movement during later checks.
 
+### QGroundControl
+
+Install prerequisites:
+
+```bash
+sudo usermod -aG dialout "$(id -un)"
+sudo apt install gstreamer1.0-plugins-bad gstreamer1.0-libav gstreamer1.0-gl -y
+sudo apt install python3-gi python3-gst-1.0 -y
+sudo apt install libfuse2 -y
+sudo apt install libxcb-xinerama0 libxkbcommon-x11-0 libxcb-cursor-dev -y
+```
+
+Notes:
+
+- A fresh login is required after adding the user to the `dialout` group.
+- Masking or removing `ModemManager` is optional for this UDP-only SITL workflow;
+  it is more relevant for physical serial devices.
+
+Install QGroundControl:
+
+```bash
+cd ~/Downloads
+wget -O QGroundControl-x86_64.AppImage https://d176tv9ibo4jno.cloudfront.net/latest/QGroundControl-x86_64.AppImage
+chmod +x QGroundControl-x86_64.AppImage
+./QGroundControl-x86_64.AppImage
+```
+
+Explicit MAVProxy link configuration:
+
+- Do not rely on QGroundControl UDP auto-discovery for this validation.
+- Start Isaac Sim, load the Pegasus scene and Iris vehicle, then press Play so
+  PX4 connects to Pegasus.
+- Start MAVProxy from this repository:
+
+```bash
+cd /home/test/Desktop/Case-Study/configs
+./run_mavproxy.sh
+```
+
+- In QGroundControl, open `Application Settings` / `Comm Links`.
+- Add a new manual link with:
+
+| Field | Value |
+| --- | --- |
+| Name | `MAVProxy 14551` |
+| Type | `UDP` |
+| Listening port | `14551` |
+| Server address | `127.0.0.1` |
+
+- Save the link, select it, and click `Connect`.
+- Expected result: QGroundControl receives MAVLink telemetry from PX4 through
+  MAVProxy, shows the vehicle in Fly View, and begins loading PX4 parameters.
+- Capture the validation screenshot as:
+
+```text
+evidence/qgroundcontrol-mavproxy-telemetry.png
+```
+
+Pending validation evidence:
+
+```text
+QGroundControl explicit UDP link: not yet validated
+Expected endpoint: 127.0.0.1:14551
+Expected upstream route: PX4/Pegasus -> MAVProxy udp:127.0.0.1:14550 -> QGC udp:127.0.0.1:14551
+```
+
 ## Current Blockers And Next Checks
 
-- QGroundControl connection through MAVProxy is the next major setup step, with
-  the known limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim
-  5.1.0 requires 10 GB.
+- QGroundControl still needs to be installed and connected through the explicit
+  MAVProxy UDP link at `127.0.0.1:14551`.
+- The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
+  while Isaac Sim 5.1.0 requires 10 GB.
 - Verification-script dependencies are not installed yet.
 
 ## References
