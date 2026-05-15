@@ -841,11 +841,60 @@ Interpretation:
 - QGroundControl successfully received MAVLink telemetry through the explicit
   MAVProxy UDP link at `127.0.0.1:14551`.
 
+### Baseline Verification Script
+
+A narrow, non-invasive verification script was added for repeatable setup
+checks:
+
+```bash
+scripts/verify_mavlink_route.sh
+```
+
+Purpose:
+
+- Verify that the expected local install paths and route configuration are in
+  place before running the full simulator stack.
+- Keep the check independent from curated screenshots or evidence filenames, so
+  a fresh installer is not required to create a specific `.png` file.
+- Avoid launching Isaac Sim, PX4, MAVProxy, or QGroundControl automatically.
+
+The script checks:
+
+- `configs/run_mavproxy.sh` exists and is executable.
+- `mavproxy.py` is available in `PATH`.
+- Isaac Sim launcher and bundled Python exist under `${ISAACSIM_PATH}` or
+  `~/isaacsim`.
+- Pegasus extension manifest exists under `${PEGASUS_DIR}` or
+  `~/PegasusSimulator`.
+- PX4 SITL binary exists under `${PX4_DIR}` or `~/PX4-Autopilot`.
+- PX4 reports `v1.16.0` with `git describe --tags --always`.
+- The MAVProxy route script contains the expected endpoints:
+  `127.0.0.1:14550`, `127.0.0.1:14551`, and `127.0.0.1:14540`.
+
+Usage:
+
+```bash
+cd /home/test/Desktop/Case-Study
+scripts/verify_mavlink_route.sh
+```
+
+Expected result:
+
+```text
+Summary: 0 failure(s), 0 warning(s)
+```
+
+Interpretation:
+
+- This is a baseline install/configuration check, not a live telemetry test.
+- Live MAVLink validation still requires Isaac Sim, Pegasus, PX4, MAVProxy, and
+  QGroundControl or a MAVLink client to be running together.
+
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
-- Verification-script dependencies are not installed yet.
+- Broader live verification is still pending.
 
 ## References
 
