@@ -54,7 +54,7 @@ Decision:
 | --- | --- |
 | Isaac Sim | 5.1.0 standalone workstation package extracted to `~/isaacsim` |
 | Pegasus Simulator | Cloned to `~/PegasusSimulator`; extension directory present |
-| PX4 | Not installed yet |
+| PX4 | v1.16.0 cloned to `~/PX4-Autopilot`; Ubuntu setup completed; SITL starts |
 | QGroundControl | Not installed yet |
 | MAVProxy | Not installed yet |
 
@@ -484,9 +484,89 @@ Result:
 - A screenshot of the successful Pegasus extension launch should be saved as
   `evidence/pegasus-extension-launch.png`.
 
+### PX4
+
+Installation method:
+
+- PX4 is installed outside the repository because it is a large third-party
+  dependency.
+- PX4 was cloned to the path expected by the Pegasus panel:
+  `~/PX4-Autopilot`.
+- PX4 was pinned to `v1.16.0` for reproducibility before initializing submodules.
+
+Commands used:
+
+```bash
+cd ~
+git clone https://github.com/PX4/PX4-Autopilot.git
+cd ~/PX4-Autopilot
+git checkout v1.16.0
+git submodule update --init --recursive
+```
+
+Version validation:
+
+```bash
+cd ~/PX4-Autopilot
+git describe --tags --always
+```
+
+Result:
+
+```text
+v1.16.0
+```
+
+Dependency setup:
+
+```bash
+cd ~/PX4-Autopilot
+bash ./Tools/setup/ubuntu.sh
+```
+
+Basic SITL validation:
+
+```bash
+cd ~/PX4-Autopilot
+make px4_sitl none
+```
+
+Relevant result:
+
+```text
+px4 starting.
+INFO  [init] SIH simulator
+INFO  [simulator_sih] Simulation loop with 250 Hz
+INFO  [mavlink] mode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550
+INFO  [mavlink] mode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540
+INFO  [mavlink] mode: Onboard, data rate: 4000 B/s on udp port 14280 remote port 14030
+INFO  [mavlink] mode: Gimbal, data rate: 400000 B/s on udp port 13030 remote port 13280
+INFO  [px4] Startup script returned successfully
+```
+
+Observed warnings:
+
+```text
+No autostart ID found
+Preflight Fail: Accel 0 uncalibrated
+Preflight Fail: barometer 0 missing
+Preflight Fail: Gyro 0 uncalibrated
+Preflight Fail: Found 0 compass (required: 1)
+```
+
+Interpretation:
+
+- PX4 v1.16.0 builds and starts in SITL mode.
+- The `none` target is a basic PX4/SITL validation, not the final Pegasus vehicle
+  integration.
+- The preflight warnings are expected for this intermediate validation because
+  the full Pegasus simulated vehicle/sensor workflow is not connected yet.
+- PX4 reports MAVLink on localhost only, which is acceptable for the next step
+  because the challenge requires explicit routing through MAVProxy.
+
 ## Current Blockers And Next Checks
 
-- PX4 installation/configuration is the next major setup step, with the known
+- Pegasus-to-PX4 vehicle integration is the next major setup step, with the known
   limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0
   requires 10 GB.
 - QGroundControl, MAVProxy, and verification-script dependencies are not installed
