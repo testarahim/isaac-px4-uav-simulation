@@ -472,6 +472,12 @@ isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.s
 
 Result:
 
+- The persistent Isaac Sim GUI extension search path could not be added from
+  `Window` / `Extensions` / `Settings` / `Extensions Search Paths` on this
+  workstation.
+- This was not treated as a blocker because Isaac Sim can receive the same
+  Pegasus extension path at launch time with `--ext-folder`, and the Pegasus
+  extension can be enabled explicitly with `--enable pegasus.simulator`.
 - Isaac Sim launched with the Pegasus extension path.
 - The `Pegasus Simulator` panel was visible in Isaac Sim.
 - In the `Pegasus Simulator` tab, `Load Scene` was used with the default
@@ -815,24 +821,28 @@ cd /home/test/Desktop/Case-Study/configs
 - Save the link, select it, and click `Connect`.
 - Expected result: QGroundControl receives MAVLink telemetry from PX4 through
   MAVProxy, shows the vehicle in Fly View, and begins loading PX4 parameters.
-- Capture the validation screenshot as:
+- Validation screenshot captured as:
 
 ```text
 evidence/qgroundcontrol-mavproxy-telemetry.png
 ```
 
-Pending validation evidence:
+Validation evidence:
 
 ```text
-QGroundControl explicit UDP link: not yet validated
-Expected endpoint: 127.0.0.1:14551
-Expected upstream route: PX4/Pegasus -> MAVProxy udp:127.0.0.1:14550 -> QGC udp:127.0.0.1:14551
+QGroundControl explicit UDP link: validated
+Endpoint: 127.0.0.1:14551
+Route: PX4/Pegasus -> MAVProxy udp:127.0.0.1:14550 -> QGC udp:127.0.0.1:14551
+Observed QGC state: vehicle visible in Fly View, battery at 100%, mode Hold, status Not Ready
 ```
+
+Interpretation:
+
+- QGroundControl successfully received MAVLink telemetry through the explicit
+  MAVProxy UDP link at `127.0.0.1:14551`.
 
 ## Current Blockers And Next Checks
 
-- QGroundControl still needs to be installed and connected through the explicit
-  MAVProxy UDP link at `127.0.0.1:14551`.
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
 - Verification-script dependencies are not installed yet.

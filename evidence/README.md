@@ -9,6 +9,7 @@ working parts of the setup.
 | --- | --- | --- |
 | `isaac-sim-first-launch.png` | Isaac Sim 5.1.0 first successful launch with viewport rendering, RTX 3070 active, and FPS overlay visible. | To be added |
 | `pegasus-extension-launch.png` | Isaac Sim launched with the Pegasus Simulator extension enabled, Iris/quadcopter visible, and Pegasus configuration panel open. | To be added |
+| `qgroundcontrol-mavproxy-telemetry.png` | QGroundControl connected through the explicit MAVProxy UDP link at `127.0.0.1:14551`, with the vehicle visible in Fly View. | Captured |
 
 ## Notes
 
