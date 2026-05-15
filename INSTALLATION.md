@@ -890,11 +890,100 @@ Interpretation:
 - Live MAVLink validation still requires Isaac Sim, Pegasus, PX4, MAVProxy, and
   QGroundControl or a MAVLink client to be running together.
 
+### Live Telemetry Verification Script
+
+A second verification script was added for the running simulator stack:
+
+```bash
+scripts/verify_mavlink_live.py
+```
+
+Purpose:
+
+- Verify live MAVLink telemetry through the same MAVProxy output used by
+  QGroundControl.
+- Keep Isaac Sim GUI, Pegasus scene loading, vehicle loading, and Play control
+  as explicit manual steps because those UI interactions are timing-sensitive on
+  this workstation.
+- Avoid sending vehicle commands. The script only listens for telemetry; it does
+  not arm, take off, change modes, or move the vehicle.
+
+Required running stack before executing the script:
+
+- Isaac Sim launched with Pegasus:
+
+```bash
+source /home/test/Desktop/Case-Study/configs/isaacsim_env.sh
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator
+```
+
+- Pegasus scene and Iris vehicle loaded, then Isaac Sim `Play` pressed.
+- MAVProxy running from this repository:
+
+```bash
+cd /home/test/Desktop/Case-Study/configs
+./run_mavproxy.sh
+```
+
+Usage from another terminal:
+
+```bash
+cd /home/test/Desktop/Case-Study
+scripts/verify_mavlink_live.py
+```
+
+Default listener endpoint:
+
+```text
+udpin:127.0.0.1:14551
+```
+
+Optional arguments:
+
+```bash
+scripts/verify_mavlink_live.py --endpoint udpin:127.0.0.1:14551 --timeout 20
+```
+
+Expected behavior:
+
+- The script waits for a MAVLink heartbeat.
+- It reports vehicle system/component IDs, mode, armed state, battery status if
+  available, and global/local position messages if available before timeout.
+- It exits successfully after receiving a heartbeat and at least one additional
+  telemetry category, or with warnings if optional telemetry messages are not
+  received before timeout.
+
+Observed validation result:
+
+```text
+PASS: heartbeat received from system 1, component 0
+Vehicle type: 2
+Autopilot: 12
+Mode: LOITER
+Armed: False
+WARN: SYS_STATUS not received before timeout
+Global position: lat=38.7368319, lon=-9.1379770, relative_alt_m=0.00
+Local position NED: x=-0.00, y=-0.00, z=-0.00
+Summary: live MAVLink telemetry check passed
+```
+
+Interpretation:
+
+- A passing result confirms that the running PX4/Pegasus/MAVProxy stack is
+  publishing live MAVLink telemetry to the explicit QGroundControl route.
+- The live MAVLink route was validated through `127.0.0.1:14551`.
+- `SYS_STATUS` was not received before timeout, but heartbeat plus global/local
+  position telemetry were sufficient for this route-level check.
+- A timeout means the stack is not running, MAVProxy is not forwarding to
+  `127.0.0.1:14551`, or another process already owns the expected UDP listener
+  port.
+
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
-- Broader live verification is still pending.
+- Broader command-level verification, such as arming or takeoff readiness, is
+  still pending.
 
 ## References
 
