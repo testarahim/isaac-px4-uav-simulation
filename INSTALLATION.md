@@ -564,11 +564,98 @@ Interpretation:
 - PX4 reports MAVLink on localhost only, which is acceptable for the next step
   because the challenge requires explicit routing through MAVProxy.
 
+Pegasus PX4 launch investigation:
+
+- Pegasus selected the PX4 backend when `Load Vehicle` was used, but no PX4
+  process was created.
+- A process check returned only the grep process, so PX4 was not running in the
+  background:
+
+```bash
+ps aux | grep -i px4
+```
+
+- The Pegasus source code was inspected with:
+
+```bash
+cd ~/PegasusSimulator
+grep -RIn "PX4\|airframe\|gazebo-classic\|make px4\|Auto-launch\|PX4 Path" README.md docs examples extensions tools
+```
+
+Relevant findings:
+
+```text
+PX4LaunchTool requires PX4 to be built with 'make px4_sitl_default none'.
+PX4LaunchTool sets PX4_SIM_MODEL to the configured vehicle model.
+Default px4_vehicle_model is gazebo-classic_iris.
+configs.yaml notes: px4_default_airframe: gazebo-classic_iris
+```
+
+Incorrect validation attempt:
+
+```bash
+cd ~/PX4-Autopilot
+make px4_sitl gazebo-classic_iris
+```
+
+Result:
+
+```text
+ninja: error: unknown target 'gazebo-classic_iris'
+make: *** [Makefile:232: px4_sitl] Error 1
+```
+
+Interpretation:
+
+- `gazebo-classic_iris` is not a standalone PX4 make target in this workflow.
+- Pegasus passes it to PX4 through `PX4_SIM_MODEL`.
+- The next PX4 build step for Pegasus should be:
+
+```bash
+cd ~/PX4-Autopilot
+make px4_sitl_default none
+```
+
+Pegasus/PX4 integration validation:
+
+- After loading the Pegasus scene and Iris vehicle, pressing Play in Isaac Sim
+  triggered the PX4/Pegasus connection.
+- Pegasus waited for the first MAVLink heartbeat and then received it.
+- PX4 connected to the Pegasus simulator over TCP port `4560`.
+- PX4 reported MAVLink telemetry ports and became ready for takeoff.
+
+Relevant result:
+
+```text
+Waiting for first hearbeat
+INFO  [init] PX4_SIM_HOSTNAME: localhost
+INFO  [simulator_mavlink] Waiting for simulator to accept connection on TCP port 4560
+INFO  [simulator_mavlink] Simulator connected on TCP port 4560.
+Received first hearbeat
+INFO  [mavlink] mode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550
+INFO  [mavlink] mode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540
+INFO  [mavlink] mode: Onboard, data rate: 4000 B/s on udp port 14280 remote port 14030
+INFO  [mavlink] mode: Gimbal, data rate: 400000 B/s on udp port 13030 remote port 13280
+INFO  [px4] Startup script returned successfully
+INFO  [commander] Ready for takeoff!
+```
+
+Documented endpoints at this stage:
+
+| Purpose | Endpoint |
+| --- | --- |
+| Pegasus simulator TCP connection | `localhost:4560` |
+| PX4 normal MAVLink local UDP port | `127.0.0.1:18570` |
+| PX4 normal MAVLink remote endpoint | `127.0.0.1:14550` |
+| PX4 onboard MAVLink local UDP port | `127.0.0.1:14580` |
+| PX4 onboard MAVLink remote endpoint | `127.0.0.1:14540` |
+| PX4 gimbal MAVLink local UDP port | `127.0.0.1:13030` |
+| PX4 gimbal MAVLink remote endpoint | `127.0.0.1:13280` |
+
 ## Current Blockers And Next Checks
 
-- Pegasus-to-PX4 vehicle integration is the next major setup step, with the known
-  limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0
-  requires 10 GB.
+- MAVProxy routing is the next major setup step, with the known limitation that
+  the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0 requires 10 GB.
 - QGroundControl, MAVProxy, and verification-script dependencies are not installed
   yet.
 
