@@ -56,7 +56,7 @@ Decision:
 | Pegasus Simulator | Cloned to `~/PegasusSimulator`; extension directory present |
 | PX4 | v1.16.0 cloned to `~/PX4-Autopilot`; Ubuntu setup completed; SITL starts |
 | QGroundControl | Not installed yet |
-| MAVProxy | Not installed yet |
+| MAVProxy | 1.8.74 installed with user-local pip |
 
 ## Installation Log
 
@@ -652,12 +652,59 @@ Documented endpoints at this stage:
 | PX4 gimbal MAVLink local UDP port | `127.0.0.1:13030` |
 | PX4 gimbal MAVLink remote endpoint | `127.0.0.1:13280` |
 
+### MAVProxy
+
+Initial check:
+
+```bash
+mavproxy.py --version
+```
+
+Initial result:
+
+```text
+mavproxy.py: command not found
+```
+
+Installation:
+
+```bash
+python3 -m pip install --user MAVProxy
+```
+
+PATH fix:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+Validation:
+
+```bash
+mavproxy.py --version
+```
+
+Result:
+
+```text
+WARNING: You should uninstall ModemManager as it conflicts with APM and Pixhawk
+MAVProxy is a modular ground station using the mavlink protocol
+MAVProxy Version: 1.8.74
+```
+
+Interpretation:
+
+- MAVProxy was installed successfully as a user-local Python package.
+- `~/.local/bin` had to be added to `PATH` before `mavproxy.py` could be run.
+- The ModemManager warning is relevant for serial Pixhawk/APM hardware, but it is
+  not a blocker for this UDP-only PX4 SITL routing setup.
+
 ## Current Blockers And Next Checks
 
 - MAVProxy routing is the next major setup step, with the known limitation that
   the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0 requires 10 GB.
-- QGroundControl, MAVProxy, and verification-script dependencies are not installed
-  yet.
+- QGroundControl and verification-script dependencies are not installed yet.
 
 ## References
 
