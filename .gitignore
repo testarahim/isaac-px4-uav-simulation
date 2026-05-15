@@ -46,3 +46,8 @@ evidence/raw/
 *.mp4
 *.mkv
 *.webm
+
+# MAVProxy runtime artifacts
+*.tlog
+*.tlog.raw
+mav.parm

@@ -700,11 +700,75 @@ Interpretation:
 - The ModemManager warning is relevant for serial Pixhawk/APM hardware, but it is
   not a blocker for this UDP-only PX4 SITL routing setup.
 
+Routing command:
+
+```bash
+cd /home/test/Desktop/Case-Study/configs
+./run_mavproxy.sh
+```
+
+The script runs:
+
+```bash
+mavproxy.py \
+    --master=udp:127.0.0.1:14550 \
+    --out=udpout:127.0.0.1:14551 \
+    --out=udpout:127.0.0.1:14540
+```
+
+Documented routing endpoints:
+
+| Purpose | Endpoint |
+| --- | --- |
+| MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
+| QGroundControl explicit MAVProxy output | `udpout:127.0.0.1:14551` |
+| Spare MAVSDK output | `udpout:127.0.0.1:14540` |
+
+Routing validation:
+
+```text
+Connect udp:127.0.0.1:14550 source_system=255
+Waiting for heartbeat from 127.0.0.1:14550
+link 1 OK
+Detected vehicle 1:1 on link 0
+online system 1
+Mode LOITER
+Received 893 parameters
+Saved 893 parameters to mav.parm
+```
+
+PX4/Pegasus confirmation during routing:
+
+```text
+INFO  [simulator_mavlink] Simulator connected on TCP port 4560.
+Received first hearbeat
+INFO  [mavlink] mode: Normal, data rate: 4000000 B/s on udp port 18570 remote port 14550
+INFO  [mavlink] mode: Onboard, data rate: 4000000 B/s on udp port 14580 remote port 14540
+INFO  [mavlink] partner IP: 127.0.0.1
+INFO  [commander] Ready for takeoff!
+```
+
+Observed warnings:
+
+```text
+Preflight Fail: system power unavailable
+Preflight Fail: ekf2 missing data
+fence breach
+```
+
+Interpretation:
+
+- MAVProxy successfully received MAVLink heartbeat and parameters from PX4.
+- PX4/Pegasus continued to report simulator connection and readiness.
+- The preflight/fence warnings do not block MAVProxy routing validation; they
+  will be revisited only if they prevent arming or movement during later checks.
+
 ## Current Blockers And Next Checks
 
-- MAVProxy routing is the next major setup step, with the known limitation that
-  the RTX 3070 reports 8.59 GB VRAM while Isaac Sim 5.1.0 requires 10 GB.
-- QGroundControl and verification-script dependencies are not installed yet.
+- QGroundControl connection through MAVProxy is the next major setup step, with
+  the known limitation that the RTX 3070 reports 8.59 GB VRAM while Isaac Sim
+  5.1.0 requires 10 GB.
+- Verification-script dependencies are not installed yet.
 
 ## References
 
