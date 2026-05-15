@@ -978,6 +978,102 @@ Interpretation:
   `127.0.0.1:14551`, or another process already owns the expected UDP listener
   port.
 
+### Read-Only Preflight Status Report
+
+A read-only preflight/status reporting script was added as the next step before
+any command-level testing:
+
+```bash
+scripts/report_preflight_status.py
+```
+
+Purpose:
+
+- Collect a short MAVLink status snapshot from the running PX4/Pegasus/MAVProxy
+  stack.
+- Inspect preflight-relevant telemetry such as mode, armed state, `SYS_STATUS`,
+  GPS, EKF status, extended state, and PX4 `STATUSTEXT` messages.
+- Avoid sending vehicle commands. The script does not arm, take off, change
+  modes, or move the vehicle.
+
+Default listener endpoint:
+
+```text
+udpin:127.0.0.1:14540
+```
+
+This uses the spare MAVSDK output configured in `configs/run_mavproxy.sh`, which
+keeps the QGroundControl route at `127.0.0.1:14551` available for the GUI.
+
+Usage with the simulator stack already running:
+
+```bash
+cd /home/test/Desktop/Case-Study
+scripts/report_preflight_status.py
+```
+
+Optional arguments:
+
+```bash
+scripts/report_preflight_status.py --endpoint udpin:127.0.0.1:14540 --timeout 30
+```
+
+Observed validation result:
+
+```text
+PASS: heartbeat received from system 1, component 0
+
+Vehicle
+- Type: MAV_TYPE_QUADROTOR (2)
+- Autopilot: MAV_AUTOPILOT_PX4 (12)
+- Mode: LOITER
+- Armed: no
+
+System Status
+- Battery remaining: 100%
+- Sensors present mask: 50380847
+- Sensors enabled mask: 50446383
+- Sensors healthy mask: 320915519
+- Sensors present: 3D gyro, 3D accelerometer, 3D magnetometer, absolute pressure, GPS, x/y position control, motor outputs/control, battery
+- Sensors enabled: 3D gyro, 3D accelerometer, 3D magnetometer, absolute pressure, GPS, x/y position control, motor outputs/control, RC receiver, battery
+- Present but unhealthy sensors: none reported
+
+GPS
+- Fix type: 3
+- Satellites visible: 10
+- eph: 0
+- epv: 0
+
+EKF
+- EKF_STATUS_REPORT was not received during the collection window
+
+Extended State
+- Landed state: 1
+- VTOL state: 0
+
+Status Text
+- No STATUSTEXT messages received during the collection window
+
+Summary
+- Read-only report completed without error-or-higher status text messages
+- No vehicle commands were sent
+```
+
+Interpretation:
+
+- This report is intended to explain warnings such as `Not Ready`,
+  `system power unavailable`, `ekf2 missing data`, or `fence breach` before any
+  arming/takeoff attempt.
+- A successful heartbeat means the status route is alive.
+- The read-only preflight route was validated through `127.0.0.1:14540`.
+- Battery, GPS, and extended state telemetry were received.
+- No PX4 `STATUSTEXT` error-or-higher messages were observed.
+- `EKF_STATUS_REPORT` was not received during the collection window; this is
+  recorded as an observation, not a failure.
+- Missing optional messages are reported as observations, not automatically as
+  failures, because PX4 message availability depends on stream configuration and
+  the current simulator state.
+
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
