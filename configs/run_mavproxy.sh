@@ -5,9 +5,10 @@ set -euo pipefail
 #
 # PX4/Pegasus publishes normal MAVLink to 127.0.0.1:14550.
 # QGroundControl should connect explicitly to 127.0.0.1:14551.
-# 127.0.0.1:14540 is reserved for a future MAVSDK client.
+# PX4 also publishes a direct onboard MAVLink stream to 127.0.0.1:14540.
+# The MAVProxy spare script/MAVSDK output uses 127.0.0.1:14542 to avoid that.
 
 exec mavproxy.py \
     --master=udp:127.0.0.1:14550 \
     --out=udpout:127.0.0.1:14551 \
-    --out=udpout:127.0.0.1:14540
+    --out=udpout:127.0.0.1:14542

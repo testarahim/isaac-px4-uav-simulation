@@ -46,7 +46,8 @@ Configured endpoints:
 | --- | --- |
 | MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
 | QGroundControl explicit output | `udpout:127.0.0.1:14551` |
-| Spare MAVSDK/script output | `udpout:127.0.0.1:14540` |
+| Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
+| PX4 direct onboard endpoint, documented but not used by MAVProxy scripts | `127.0.0.1:14540` |
 
 The executable route configuration is in
 [configs/run_mavproxy.sh](configs/run_mavproxy.sh).
@@ -72,9 +73,11 @@ Short version:
 | [scripts/verify_mavlink_route.sh](scripts/verify_mavlink_route.sh) | Non-invasive baseline check for install paths, PX4 version, and MAVProxy endpoint configuration. |
 | [scripts/verify_mavlink_live.py](scripts/verify_mavlink_live.py) | Live MAVLink heartbeat and telemetry check through the QGroundControl route. |
 | [scripts/report_preflight_status.py](scripts/report_preflight_status.py) | Read-only preflight/status snapshot through the spare MAVSDK/script route. |
+| [scripts/mavsdk_status_client.py](scripts/mavsdk_status_client.py) | Read-only MAVSDK client that connects to the spare port and prints connection state, position, attitude, flight mode, battery, and armed state. |
 
 None of the verification scripts arm, take off, change modes, or move the
-vehicle.
+vehicle. MAVSDK may perform internal telemetry stream setup over MAVLink, but
+the client does not send vehicle control actions.
 
 ## Evidence
 
@@ -140,7 +143,7 @@ The following optional challenge items are intentionally left for later work:
 | Gimbal and camera | Pending |
 | Camera video in QGroundControl | Pending |
 | Gimbal control from QGroundControl | Pending |
-| True MAVSDK client on the spare port | Pending |
+| True MAVSDK client on the spare port | Complete |
 
-The spare MAVSDK/script route at `127.0.0.1:14540` is already configured and was
-validated with a read-only `pymavlink` status script.
+The spare MAVSDK/script route at `127.0.0.1:14542` is configured and validated
+with both a read-only `pymavlink` status script and a read-only MAVSDK client.

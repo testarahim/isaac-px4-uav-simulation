@@ -97,7 +97,7 @@ fi
 if [ -f "$ROOT_DIR/configs/run_mavproxy.sh" ]; then
     check_contains "$ROOT_DIR/configs/run_mavproxy.sh" "--master=udp:127.0.0.1:14550" "MAVProxy master input"
     check_contains "$ROOT_DIR/configs/run_mavproxy.sh" "--out=udpout:127.0.0.1:14551" "QGroundControl output"
-    check_contains "$ROOT_DIR/configs/run_mavproxy.sh" "--out=udpout:127.0.0.1:14540" "MAVSDK spare output"
+    check_contains "$ROOT_DIR/configs/run_mavproxy.sh" "--out=udpout:127.0.0.1:14542" "MAVSDK/script spare output through MAVProxy"
 fi
 
 printf '\nSummary: %s failure(s), %s warning(s)\n' "$FAILURES" "$WARNINGS"

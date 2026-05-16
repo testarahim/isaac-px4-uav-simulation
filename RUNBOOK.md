@@ -68,7 +68,11 @@ The script routes MAVLink as follows:
 | --- | --- |
 | MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
 | QGroundControl explicit output | `udpout:127.0.0.1:14551` |
-| Spare MAVSDK output | `udpout:127.0.0.1:14540` |
+| Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
+
+PX4 also publishes a direct onboard MAVLink endpoint to `127.0.0.1:14540`.
+The MAVProxy spare output intentionally uses `14542` so tests can prove they are
+passing through MAVProxy rather than connecting directly to PX4.
 
 `configs/run_mavproxy.sh` is kept under `configs` because it defines the MAVLink
 routing configuration and is executable for convenience.
@@ -94,7 +98,7 @@ Expected result:
 
 - QGroundControl shows the vehicle in Fly View.
 - Vehicle telemetry is visible through MAVProxy.
-- The spare output at `127.0.0.1:14540` remains available for scripts or a
+- The spare output at `127.0.0.1:14542` remains available for scripts or a
   future MAVSDK client.
 
 Evidence:
@@ -148,6 +152,26 @@ Expected result:
 - Battery, GPS, and extended state telemetry are reported.
 - No vehicle commands are sent.
 
+Run the optional read-only MAVSDK status client on the spare route:
+
+```bash
+cd /home/test/Desktop/Case-Study
+scripts/mavsdk_status_client.py
+```
+
+Default listener endpoint:
+
+```text
+udpin://0.0.0.0:14542
+```
+
+Expected result:
+
+- MAVSDK reports a connected vehicle through its connection state stream.
+- The script prints flight mode, armed state, position, attitude, and battery
+  telemetry as those streams become available.
+- No arm, takeoff, mode-change, or movement commands are sent.
+
 ## PX4 Parameters
 
 No custom PX4 parameters were changed for the required setup. The workflow uses
@@ -169,5 +193,6 @@ Curated evidence is stored under `evidence/`:
   requirement, although first launch and the required workflow were validated.
 - The persistent Pegasus extension path could not be added through the Isaac Sim
   Extensions UI, so `--ext-folder` is used at launch time.
-- Optional tasks, including urban environment, gimbal/camera, QGC video, gimbal
-  control, and a true MAVSDK client, are pending future work.
+- Optional tasks including urban environment, gimbal/camera, QGC video, and
+  gimbal control are pending future work. The read-only MAVSDK client is
+  implemented on the spare MAVProxy route.

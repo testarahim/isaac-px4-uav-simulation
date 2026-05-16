@@ -70,9 +70,9 @@ def parse_args():
     )
     parser.add_argument(
         "--endpoint",
-        default="udpin:127.0.0.1:14540",
+        default="udpin:127.0.0.1:14542",
         help=(
-            "MAVLink endpoint to listen on. Default: udpin:127.0.0.1:14540 "
+            "MAVLink endpoint to listen on. Default: udpin:127.0.0.1:14542 "
             "(the spare MAVSDK output in configs/run_mavproxy.sh)."
         ),
     )

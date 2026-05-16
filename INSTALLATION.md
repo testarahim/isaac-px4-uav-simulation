@@ -719,7 +719,7 @@ The script runs:
 mavproxy.py \
     --master=udp:127.0.0.1:14550 \
     --out=udpout:127.0.0.1:14551 \
-    --out=udpout:127.0.0.1:14540
+    --out=udpout:127.0.0.1:14542
 ```
 
 Documented routing endpoints:
@@ -728,7 +728,12 @@ Documented routing endpoints:
 | --- | --- |
 | MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
 | QGroundControl explicit MAVProxy output | `udpout:127.0.0.1:14551` |
-| Spare MAVSDK output | `udpout:127.0.0.1:14540` |
+| Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
+
+PX4 also publishes a direct onboard MAVLink stream to `127.0.0.1:14540`. The
+MAVProxy spare route intentionally uses `14542` so script and MAVSDK validation
+can prove they are passing through MAVProxy instead of connecting directly to
+PX4's onboard endpoint.
 
 Routing validation:
 
@@ -878,7 +883,7 @@ The script checks:
 - PX4 SITL binary exists under `${PX4_DIR}` or `~/PX4-Autopilot`.
 - PX4 reports `v1.16.0` with `git describe --tags --always`.
 - The MAVProxy route script contains the expected endpoints:
-  `127.0.0.1:14550`, `127.0.0.1:14551`, and `127.0.0.1:14540`.
+  `127.0.0.1:14550`, `127.0.0.1:14551`, and `127.0.0.1:14542`.
 
 Usage:
 
@@ -1008,11 +1013,12 @@ Purpose:
 Default listener endpoint:
 
 ```text
-udpin:127.0.0.1:14540
+udpin:127.0.0.1:14542
 ```
 
-This uses the spare MAVSDK output configured in `configs/run_mavproxy.sh`, which
-keeps the QGroundControl route at `127.0.0.1:14551` available for the GUI.
+This uses the spare MAVSDK/script output configured in `configs/run_mavproxy.sh`,
+which keeps the QGroundControl route at `127.0.0.1:14551` available for the GUI
+and avoids PX4's direct onboard endpoint at `127.0.0.1:14540`.
 
 Usage with the simulator stack already running:
 
@@ -1024,7 +1030,7 @@ scripts/report_preflight_status.py
 Optional arguments:
 
 ```bash
-scripts/report_preflight_status.py --endpoint udpin:127.0.0.1:14540 --timeout 30
+scripts/report_preflight_status.py --endpoint udpin:127.0.0.1:14542 --timeout 30
 ```
 
 Observed validation result:
@@ -1074,7 +1080,7 @@ Interpretation:
   `system power unavailable`, `ekf2 missing data`, or `fence breach` before any
   arming/takeoff attempt.
 - A successful heartbeat means the status route is alive.
-- The read-only preflight route was validated through `127.0.0.1:14540`.
+- The read-only preflight route was validated through `127.0.0.1:14542`.
 - Battery, GPS, and extended state telemetry were received.
 - No PX4 `STATUSTEXT` error-or-higher messages were observed.
 - `EKF_STATUS_REPORT` was not received during the collection window; this is
@@ -1082,6 +1088,62 @@ Interpretation:
 - Missing optional messages are reported as observations, not automatically as
   failures, because PX4 message availability depends on stream configuration and
   the current simulator state.
+
+### Read-Only MAVSDK Status Client
+
+A true MAVSDK Python client was added for the optional spare-port workflow:
+
+```bash
+scripts/mavsdk_status_client.py
+```
+
+Purpose:
+
+- Connect to the spare MAVProxy output intended for MAVSDK or scripts.
+- Report MAVSDK connection state as the heartbeat-level connectivity check.
+- Print flight mode, armed state, position, attitude, and battery telemetry.
+- Avoid vehicle control actions. The script subscribes to telemetry streams and
+  does not arm, take off, change modes, or move the vehicle.
+
+Default listener endpoint:
+
+```text
+udpin://0.0.0.0:14542
+```
+
+This corresponds to the MAVProxy output:
+
+```text
+--out=udpout:127.0.0.1:14542
+```
+
+Install MAVSDK Python if it is not already available:
+
+```bash
+python3 -m pip install --user mavsdk
+```
+
+Usage with the simulator stack already running:
+
+```bash
+cd /home/test/Desktop/Case-Study
+scripts/mavsdk_status_client.py
+```
+
+Optional arguments:
+
+```bash
+scripts/mavsdk_status_client.py --endpoint udpin://0.0.0.0:14542 --timeout 30
+```
+
+Expected behavior:
+
+- MAVSDK reports `connected=True` through `core.connection_state()`.
+- The client prints a short snapshot of flight mode, armed state, position,
+  attitude, and battery telemetry as streams arrive.
+- The script exits without sending arm, takeoff, mode-change, or movement
+  commands. MAVSDK may still perform internal telemetry stream setup over
+  MAVLink, which can produce harmless command-ack log lines from the SDK.
 
 ## Current Blockers And Next Checks
 
