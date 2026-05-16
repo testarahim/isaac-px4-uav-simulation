@@ -808,15 +808,14 @@ cd /home/test/Desktop/Case-Study/configs
 ./run_mavproxy.sh
 ```
 
-- In QGroundControl, open `Application Settings` / `Comm Links`.
-- Add a new manual link with:
+- In QGroundControl, open `Application Settings` / `Comm Links`.  [evidence/qgc-comm-links.png](evidence/qgc-comm-links.png)
+- Add a new manual link with: [evidence/qgc-manual-link-settings-14551.png](evidence/qgc-manual-link-settings-14551.png)
 
 | Field | Value |
 | --- | --- |
 | Name | `MAVProxy 14551` |
 | Type | `UDP` |
 | Listening port | `14551` |
-| Server address | `127.0.0.1` |
 
 - Save the link, select it, and click `Connect`.
 - Expected result: QGroundControl receives MAVLink telemetry from PX4 through
