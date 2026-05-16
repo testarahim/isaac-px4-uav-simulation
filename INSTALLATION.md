@@ -1145,6 +1145,70 @@ Expected behavior:
   commands. MAVSDK may still perform internal telemetry stream setup over
   MAVLink, which can produce harmless command-ack log lines from the SDK.
 
+### Isaac Sim Gimbal Camera Attachment
+
+An optional Isaac Sim helper script was added to attach a gimbal-mounted camera
+to the Pegasus Iris vehicle and render the environment from that camera:
+
+```bash
+scripts/add_gimbal_camera.py
+```
+
+Purpose:
+
+- Create a repeatable gimbal/camera attachment under the loaded Iris vehicle.
+- Add a simple USD transform hierarchy for yaw and pitch frames:
+  `/World/quadrotor/body/GimbalAssembly/GimbalYaw/GimbalPitch`.
+- Add a `UsdGeom.Camera` prim at the gimbal pitch frame.
+- Switch the active Isaac Sim viewport to that camera so the rendered view comes
+  from the gimbal camera's point of view.
+
+Usage:
+
+1. Launch Isaac Sim with Pegasus.
+2. Load the Pegasus scene and Iris vehicle.
+3. In Isaac Sim, open the Script Editor.
+4. Run:
+
+```python
+exec(open("/home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py").read())
+```
+
+The same helper can also be started at Isaac Sim launch time with Kit `--exec`;
+it waits for the Iris body prim and attaches the gimbal after the vehicle is
+loaded:
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py
+```
+
+Expected result:
+
+- A visible camera housing and bracket are attached under the UAV body.
+- The camera prim is available at:
+
+```text
+/World/quadrotor/body/GimbalAssembly/GimbalYaw/GimbalPitch/CameraOpticalFrame/GimbalCamera
+```
+
+- The active viewport switches to that camera and renders from the gimbal's
+  point of view.
+- The visual gimbal angle can be adjusted from the Script Editor with:
+
+```python
+set_gimbal_angles(yaw_deg=20.0, pitch_deg=-15.0)
+```
+
+`pitch_deg=0.0` is the level forward view; negative pitch values look downward.
+The helper clamps pitch to `-90..30` degrees to avoid pointing the camera back
+into the UAV body.
+
+Limitations:
+
+- This is a simulation-side visual gimbal/camera attachment.
+- It does not yet stream video to QGroundControl.
+- It does not yet implement MAVLink gimbal control from QGroundControl.
+
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM

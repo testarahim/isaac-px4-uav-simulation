@@ -29,13 +29,16 @@ This is a one-time setup step. Do not append the line again for every run; the
 Open a new terminal after the one-time shell setup and run:
 
 ```bash
-isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py
 ```
 
 Notes:
 
 - This launch method is reproducible and was validated with the Pegasus panel
   visible in Isaac Sim.
+- The `--exec` hook starts the optional gimbal/camera helper. If the Iris
+  vehicle is not loaded yet, the helper waits and attaches the gimbal camera
+  when `/World/quadrotor/body` appears.
 
 ### 2. Load Scene And Vehicle
 
@@ -177,6 +180,39 @@ Expected result:
 No custom PX4 parameters were changed for the required setup. The workflow uses
 the default PX4/Pegasus Iris configuration.
 
+## Optional Gimbal Camera
+
+The launch command above starts the helper automatically. To run it manually
+after Isaac Sim is already open, use Isaac Sim's Script Editor:
+
+```python
+exec(open("/home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py").read())
+```
+
+Expected result:
+
+- A gimbal transform hierarchy is added under
+  `/World/quadrotor/body/GimbalAssembly`.
+- The camera prim is created at
+  `/World/quadrotor/body/GimbalAssembly/GimbalYaw/GimbalPitch/CameraOpticalFrame/GimbalCamera`.
+- The active Isaac Sim viewport switches to the gimbal camera, rendering the
+  environment from the camera's point of view.
+
+This helper is a visual/simulation-side attachment only. It does not add QGC
+video streaming or MAVLink gimbal control; those remain separate optional tasks.
+
+To adjust the visual gimbal angle from the Script Editor after running the
+helper, call:
+
+```python
+set_gimbal_angles(yaw_deg=20.0, pitch_deg=-15.0)
+```
+
+`pitch_deg=0.0` is the level forward view. Use negative pitch values to look
+downward and positive yaw values to pan left or right relative to the vehicle
+body. The helper clamps pitch to `-90..30` degrees to avoid pointing the camera
+back into the UAV body.
+
 ## Evidence
 
 Curated evidence is stored under `evidence/`:
@@ -193,6 +229,6 @@ Curated evidence is stored under `evidence/`:
   requirement, although first launch and the required workflow were validated.
 - The persistent Pegasus extension path could not be added through the Isaac Sim
   Extensions UI, so `--ext-folder` is used at launch time.
-- Optional tasks including urban environment, gimbal/camera, QGC video, and
-  gimbal control are pending future work. The read-only MAVSDK client is
-  implemented on the spare MAVProxy route.
+- Optional tasks including urban environment, QGC video, and gimbal control are
+  pending future work. The read-only MAVSDK client and Isaac Sim gimbal camera
+  attachment are implemented.

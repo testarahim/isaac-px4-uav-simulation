@@ -131,19 +131,24 @@ the default PX4/Pegasus Iris configuration.
   Extensions UI, so the extension is passed at launch time with `--ext-folder`.
 - QGroundControl AutoConnect should be disabled and QGroundControl restarted
   before validating the explicit MAVProxy route.
-- Optional tasks are not implemented yet.
+- Remaining optional tasks are listed below.
 
-## Optional Work Planned
+## Optional Work
 
-The following optional challenge items are intentionally left for later work:
+Optional challenge items:
 
 | Optional item | Status |
 | --- | --- |
 | Outdoor / urban Isaac Sim environment | Pending |
-| Gimbal and camera | Pending |
+| Gimbal and camera | Complete |
 | Camera video in QGroundControl | Pending |
 | Gimbal control from QGroundControl | Pending |
 | True MAVSDK client on the spare port | Complete |
 
 The spare MAVSDK/script route at `127.0.0.1:14542` is configured and validated
 with both a read-only `pymavlink` status script and a read-only MAVSDK client.
+
+The optional gimbal/camera workflow is implemented with
+[scripts/add_gimbal_camera.py](scripts/add_gimbal_camera.py). It attaches a
+simple gimbal transform hierarchy and camera prim under the Pegasus Iris vehicle
+body, then switches the Isaac Sim viewport to that camera.
