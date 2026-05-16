@@ -78,6 +78,11 @@ routing configuration and is executable for convenience.
 Do not rely on automatic localhost discovery. In QGroundControl, create or use a
 manual UDP link:
 
+- Disable the QGroundControl AutoConnect options.
+- Restart QGroundControl after changing AutoConnect settings; the running
+  process may keep existing UDP listeners active until restart.
+- Use the manual MAVProxy link at `14551`.
+
 | Field | Value |
 | --- | --- |
 | Name | `MAVProxy 14551` |
@@ -91,6 +96,12 @@ Expected result:
 - Vehicle telemetry is visible through MAVProxy.
 - The spare output at `127.0.0.1:14540` remains available for scripts or a
   future MAVSDK client.
+
+Evidence:
+
+- [QGroundControl Comm Links](evidence/qgc-comm-links.png)
+- [Manual MAVProxy UDP link settings](evidence/qgc-manual-link-settings-14551.png)
+- [QGroundControl telemetry through MAVProxy](evidence/qgroundcontrol-mavproxy-telemetry.png)
 
 ## Verification
 

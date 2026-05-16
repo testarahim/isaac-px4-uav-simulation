@@ -808,8 +808,10 @@ cd /home/test/Desktop/Case-Study/configs
 ./run_mavproxy.sh
 ```
 
-- In QGroundControl, open `Application Settings` / `Comm Links`.  [evidence/qgc-comm-links.png](evidence/qgc-comm-links.png)
-- Add a new manual link with: [evidence/qgc-manual-link-settings-14551.png](evidence/qgc-manual-link-settings-14551.png)
+- In QGroundControl, open `Application Settings` / `Comm Links`.
+- Disable AutoConnect options and restart QGroundControl before validating the
+  explicit MAVProxy route.
+- Add a new manual link with:
 
 | Field | Value |
 | --- | --- |
@@ -825,6 +827,14 @@ cd /home/test/Desktop/Case-Study/configs
 ```text
 evidence/qgroundcontrol-mavproxy-telemetry.png
 ```
+
+QGroundControl communication settings evidence:
+
+| Evidence | Description |
+| --- | --- |
+| `evidence/qgc-comm-links.png` | QGroundControl Comm Links screen with AutoConnect options disabled and the manual MAVProxy link listed. |
+| `evidence/qgc-manual-link-settings-14551.png` | Manual UDP link settings showing the explicit MAVProxy port `14551`. |
+| `evidence/qgroundcontrol-mavproxy-telemetry.png` | QGroundControl Fly View showing telemetry through the MAVProxy route. |
 
 Validation evidence:
 

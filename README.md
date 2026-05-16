@@ -84,6 +84,8 @@ Curated screenshots are stored in [evidence/](evidence/):
 | --- | --- |
 | [evidence/isaac-sim-first-launch.png](evidence/isaac-sim-first-launch.png) | Isaac Sim 5.1.0 first successful launch. |
 | [evidence/pegasus-extension-launch.png](evidence/pegasus-extension-launch.png) | Pegasus extension enabled with Iris visible in Isaac Sim. |
+| [evidence/qgc-comm-links.png](evidence/qgc-comm-links.png) | QGroundControl Comm Links screen with AutoConnect disabled and manual MAVProxy link listed. |
+| [evidence/qgc-manual-link-settings-14551.png](evidence/qgc-manual-link-settings-14551.png) | QGroundControl manual UDP link configured for the explicit MAVProxy port `14551`. |
 | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) | QGroundControl telemetry through the explicit MAVProxy endpoint. |
 
 ### Screenshot Previews
@@ -95,6 +97,14 @@ Isaac Sim first launch:
 Pegasus extension and Iris vehicle:
 
 ![Pegasus extension launch](evidence/pegasus-extension-launch.png)
+
+QGroundControl Comm Links:
+
+![QGroundControl Comm Links](evidence/qgc-comm-links.png)
+
+QGroundControl manual MAVProxy link settings:
+
+![QGroundControl manual link settings](evidence/qgc-manual-link-settings-14551.png)
 
 QGroundControl telemetry through MAVProxy:
 
