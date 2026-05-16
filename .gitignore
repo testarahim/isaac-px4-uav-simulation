@@ -50,4 +50,7 @@ evidence/raw/
 # MAVProxy runtime artifacts
 *.tlog
 *.tlog.raw
+configs/mav.tlog
+configs/mav.tlog.raw
+configs/mav.parm
 mav.parm

@@ -55,7 +55,7 @@ Decision:
 | Isaac Sim | 5.1.0 standalone workstation package extracted to `~/isaacsim` |
 | Pegasus Simulator | Cloned to `~/PegasusSimulator`; extension directory present |
 | PX4 | v1.16.0 cloned to `~/PX4-Autopilot`; Ubuntu setup completed; SITL starts |
-| QGroundControl | Not installed yet; explicit MAVProxy UDP link procedure documented |
+| QGroundControl | Installed and validated through an explicit MAVProxy UDP link |
 | MAVProxy | 1.8.74 installed with user-local pip |
 
 ## Installation Log
@@ -378,7 +378,7 @@ Result:
 - This first launch delay is acceptable for this workstation and may be related
   to initial extension loading, shader/cache warmup, or the documented VRAM
   limitation.
-- A screenshot of the successful first launch should be saved as
+- A screenshot of the successful first launch was saved as
   `evidence/isaac-sim-first-launch.png`.
 
 Relevant terminal log:
@@ -487,7 +487,7 @@ Result:
 - The default Iris/quadcopter vehicle was visible in the loaded scene.
 - The Pegasus panel showed PX4 configuration fields, including PX4 path,
   airframe, scene selection, geographic coordinates, and vehicle selection.
-- A screenshot of the successful Pegasus extension launch should be saved as
+- A screenshot of the successful Pegasus extension launch was saved as
   `evidence/pegasus-extension-launch.png`.
 
 ### PX4
