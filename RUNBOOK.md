@@ -332,6 +332,181 @@ QGC_VIDEO_DURATION_S=30 isaac_run --ext-folder /home/test/PegasusSimulator/exten
 - This does not implement QGroundControl gimbal control. That remains the next
   optional task.
 
+## Optional Gimbal Control from QGroundControl
+
+This workflow bridges MAVLink gimbal commands from QGroundControl into the Isaac
+Sim USD gimbal transform so that the gimbal camera prim tracks the angle
+commanded from QGC (map ROI clicks, missions, or MAVLink CLI commands).
+
+### Data flow
+
+```text
+QGC Fly View  →  MAVProxy 14551
+   (map ROI / mission / MAVLink Inspector)
+                           ↓
+                    PX4 gimbal manager (component 1)
+                           ↓
+            ┌──────────────┴──────────────┐
+            ↓                             ↓
+  GIMBAL_DEVICE_SET_ATTITUDE     GIMBAL_DEVICE_SET_ATTITUDE
+  → port 13030/13280            → MAVProxy → udpout:14555
+  → gimbal_device_sim.py         → gimbal_control_bridge.py
+   (acknowledges device          → USD prim update in Isaac Sim
+    so PX4 gimbal manager
+    stays active)
+```
+
+### Why two simulated components are needed
+
+PX4's gimbal manager only starts and broadcasts `GIMBAL_MANAGER_*` messages
+when at least one **gimbal device** has answered on the dedicated MAVLink
+gimbal instance (port `13030`/`13280`). Because PX4 SITL ships no gimbal
+hardware, `scripts/gimbal_device_sim.py` impersonates that device and answers
+the handshake. Once it does, the manager activates and the bridge can drive
+the Isaac Sim USD prim from any command source.
+
+The PX4 airframe file `10015_gazebo-classic_iris` sets the bootstrap defaults:
+
+```bash
+param set-default MNT_MODE_IN 4   # accept GIMBAL_MANAGER_SET_ATTITUDE from GCS
+param set-default MNT_MODE_OUT 2  # output MAVLink gimbal protocol v2
+```
+
+If the parameter database was written with `MNT_MODE_IN = -1` before this
+defaults change, delete the stored bson once so the airframe defaults take
+effect on next boot:
+
+```bash
+rm ~/PX4-Autopilot/build/px4_sitl_default/rootfs/parameters.bson \
+   ~/PX4-Autopilot/build/px4_sitl_default/rootfs/parameters_backup.bson
+```
+
+### Port map
+
+| Purpose | Endpoint |
+| --- | --- |
+| MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
+| QGroundControl output | `udpout:127.0.0.1:14551` |
+| Spare MAVSDK/script output | `udpout:127.0.0.1:14542` |
+| Gimbal control bridge input | `udpout:127.0.0.1:14555` |
+| PX4 gimbal MAVLink instance (PX4 listen) | `127.0.0.1:13030` |
+| Simulated gimbal device (script listen) | `0.0.0.0:13280` |
+
+### Startup order
+
+Follow the normal startup order (steps 0–4) to launch Isaac Sim, load the
+Pegasus scene and Iris vehicle, start MAVProxy, and connect QGroundControl.
+Then add the two gimbal helpers:
+
+#### 5a. Start the simulated gimbal device
+
+In a separate terminal:
+
+```bash
+python3 /home/test/Desktop/Case-Study/scripts/gimbal_device_sim.py
+```
+
+Expected output within a second or two:
+
+```text
+[gimbal_sim] Bound to :13280  →  PX4 at 127.0.0.1:13030
+[gimbal_sim] GIMBAL_DEVICE_INFORMATION sent → waiting for PX4 reply …
+[gimbal_sim] First PX4 reply: GIMBAL_DEVICE_SET_ATTITUDE — handshake established!
+```
+
+#### 5b. Launch Isaac Sim with the gimbal control bridge
+
+##### Option A — gimbal control only (no video stream)
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py \
+  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+```
+
+`add_gimbal_camera.py` runs first and creates the `GimbalAssembly` USD prim
+hierarchy. The bridge then waits for that prim before starting its MAVLink
+listener.
+
+##### Option B — gimbal control with live QGC video (recommended)
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+```
+
+`setup_gimbal_video.py` internally runs both `add_gimbal_camera.py` (creates
+the gimbal prim) and `stream_gimbal_camera_to_qgc.py` (starts the RTP/H.264
+video stream to QGC port `5600`). The bridge is then added as the third hook.
+With this option, QGroundControl receives both MAVLink telemetry and a live
+video feed that follows the gimbal angle you command.
+
+### Controlling the gimbal from QGroundControl
+
+Three working interaction modes, in order of expected use:
+
+#### Mode 1 — Map ROI (interactive, GUI)
+
+In QGC Fly View, **right-click anywhere on the map** during flight and choose
+**Set ROI on location**. The PX4 gimbal manager slews the gimbal to point at
+that lat/lon. Works in any QGC version with gimbal v2 support (4.2+).
+
+#### Mode 2 — Mission ROI items (planned, GUI)
+
+In Plan View, add a **Region of Interest** mission item. The gimbal locks onto
+that ROI for the duration of the mission segment.
+
+#### Mode 3 — Direct MAVLink commands (precise angles)
+
+From the MAVProxy terminal, first acquire primary gimbal control once per PX4
+boot, then send pitch/yaw commands:
+
+```text
+long 1001 255 230 -1 -1 0 0 0          # MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE
+                                       # sysid 255 / compid 230 = MAVProxy itself
+long 1000 -30 45 0 0 0 0 0             # MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW
+                                       # pitch -30°, yaw +45°
+```
+
+Expected ACK lines and Isaac Sim viewport response:
+
+```text
+Got COMMAND_ACK: DO_GIMBAL_MANAGER_CONFIGURE: ACCEPTED
+Got COMMAND_ACK: DO_GIMBAL_MANAGER_PITCHYAW: ACCEPTED
+[gimbal_sim] CMD  pitch=-30.0°  yaw=+45.0°
+[gimbal_bridge] yaw=45.0 deg  pitch=-30.0 deg
+```
+
+Sending `long 1000 -45 -90 0 0 0 0 0` then `long 1000 0 0 0 0 0 0 0` exercises
+range limits and recenter.
+
+### Note on the QGC Fly View gimbal slider
+
+A persistent pitch slider in the Fly View camera widget requires QGroundControl
+to recognise a fully-defined camera component (CAMERA_INFORMATION with a valid
+`cam_definition_uri` XML). PX4 SITL provides no camera component, so this
+specific GUI element does not appear in this setup. Map ROI clicks and mission
+ROI items remain the GUI control paths; the MAVLink CLI commands above cover
+precise-angle use cases.
+
+### What works / what does not
+
+| Capability | Status |
+| --- | --- |
+| Map ROI right-click → gimbal points at lat/lon | Working (QGC GUI) |
+| Mission ROI waypoint → gimbal locks during flight | Working (QGC GUI) |
+| `MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW` from MAVProxy | Working (MAVLink CLI) |
+| `MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE` (control acquisition) | Working — required before PITCHYAW |
+| `GIMBAL_DEVICE_SET_ATTITUDE` parse in bridge | Working — covers all command shapes |
+| `MOUNT_CONTROL` legacy command fallback in bridge | Implemented |
+| Gimbal prim update visible in Isaac Sim viewport | Working |
+| Live QGC video tracking the commanded angle | Working in Option B |
+| Persistent Fly View pitch slider widget | Not available — requires camera definition XML |
+| Physical gimbal stabilisation feedback | Not applicable — simulation only |
+
 ## Evidence
 
 Curated evidence is stored under `evidence/`:
@@ -348,6 +523,11 @@ Curated evidence is stored under `evidence/`:
   requirement, although first launch and the required workflow were validated.
 - The persistent Pegasus extension path could not be added through the Isaac Sim
   Extensions UI, so `--ext-folder` is used at launch time.
-- Optional tasks including urban environment and gimbal control from QGC are
-  pending future work. The read-only MAVSDK client, Isaac Sim gimbal camera
-  attachment, and QGroundControl video helper are implemented.
+- The urban environment optional task remains pending future work. The
+  read-only MAVSDK client, Isaac Sim gimbal camera attachment, QGroundControl
+  video helper, and gimbal control from QGC are implemented and validated.
+- QGC's Fly View persistent pitch slider widget requires a fully-defined
+  camera component (CAMERA_INFORMATION + cam_definition_uri XML). PX4 SITL
+  does not provide one, so gimbal aiming from the QGC GUI is done via map
+  ROI right-click or mission ROI waypoints. Precise-angle control uses the
+  MAVProxy MAVLink CLI commands documented in the gimbal control section.

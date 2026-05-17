@@ -719,7 +719,8 @@ The script runs:
 mavproxy.py \
     --master=udp:127.0.0.1:14550 \
     --out=udpout:127.0.0.1:14551 \
-    --out=udpout:127.0.0.1:14542
+    --out=udpout:127.0.0.1:14542 \
+    --out=udpout:127.0.0.1:14555
 ```
 
 Documented routing endpoints:
@@ -729,6 +730,7 @@ Documented routing endpoints:
 | MAVProxy master input from PX4/Pegasus | `udp:127.0.0.1:14550` |
 | QGroundControl explicit MAVProxy output | `udpout:127.0.0.1:14551` |
 | Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
+| Gimbal control bridge input | `udpout:127.0.0.1:14555` |
 
 PX4 also publishes a direct onboard MAVLink stream to `127.0.0.1:14540`. The
 MAVProxy spare route intentionally uses `14542` so script and MAVSDK validation
