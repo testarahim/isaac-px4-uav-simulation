@@ -22,6 +22,13 @@ Expected sequence
 3. PX4 gimbal manager activates and broadcasts GIMBAL_MANAGER_INFORMATION.
 4. QGC receives GIMBAL_MANAGER_INFORMATION and shows the gimbal UI.
 
+QGroundControl is strict about Fly View gimbal discovery: it only exposes the
+gimbal toolbar indicator after it has received GIMBAL_MANAGER_INFORMATION,
+GIMBAL_MANAGER_STATUS, and GIMBAL_DEVICE_ATTITUDE_STATUS on the normal QGC
+telemetry link. PX4's dedicated gimbal MAVLink instance is separate from that
+link, so this helper mirrors the QGC-facing information/status messages to
+127.0.0.1:14551 by default.
+
 Run while PX4, MAVProxy, and QGC are all running:
     python3 scripts/gimbal_device_sim.py
 """
@@ -39,9 +46,11 @@ from pymavlink.dialects.v20 import common as mlc  # noqa: E402
 PX4_GIMBAL_HOST  = "127.0.0.1"
 PX4_GIMBAL_LOCAL = 13030   # PX4 gimbal instance listen port (we send TO here)
 PX4_GIMBAL_RX    = 13280   # our bind port (PX4 sends TO here, we listen here)
+QGC_UI_TARGET    = os.environ.get("QGC_GIMBAL_UI_TARGET", "127.0.0.1:14551")
 
-SYSTEM_ID    = 1
-COMPONENT_ID = mlc.MAV_COMP_ID_GIMBAL   # 154
+SYSTEM_ID            = 1
+MANAGER_COMPONENT_ID = 1
+COMPONENT_ID         = mlc.MAV_COMP_ID_GIMBAL   # 154
 
 _CAP_FLAGS = (
     mlc.GIMBAL_DEVICE_CAP_FLAGS_HAS_PITCH_AXIS    |
@@ -50,14 +59,79 @@ _CAP_FLAGS = (
     mlc.GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_FOLLOW
 )
 
+_MANAGER_CAP_FLAGS = (
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_AXIS |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_FOLLOW |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_PITCH_LOCK |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_AXIS |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_FOLLOW |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_HAS_YAW_LOCK |
+    mlc.GIMBAL_MANAGER_CAP_FLAGS_SUPPORTS_YAW_IN_EARTH_FRAME
+)
+
 _pitch_rad = math.radians(-10.0)
 _yaw_rad   = 0.0
+
+
+def _parse_host_port(value: str):
+    host, port = value.rsplit(":", 1)
+    return host, int(port)
 
 
 def _make_quat(pitch_r: float, yaw_r: float) -> list:
     cp, cy = math.cos(pitch_r / 2), math.cos(yaw_r / 2)
     sp, sy = math.sin(pitch_r / 2), math.sin(yaw_r / 2)
     return [cp * cy, -sp * sy, sp * cy, cp * sy]  # w, x, y, z
+
+
+def _send_manager_information(conn, boot_ms: int) -> None:
+    conn.mav.gimbal_manager_information_send(
+        time_boot_ms=boot_ms,
+        cap_flags=_MANAGER_CAP_FLAGS,
+        gimbal_device_id=COMPONENT_ID,
+        roll_min=math.radians(-45.0),
+        roll_max=math.radians(45.0),
+        pitch_min=math.radians(-90.0),
+        pitch_max=math.radians(30.0),
+        yaw_min=math.radians(-180.0),
+        yaw_max=math.radians(180.0),
+    )
+
+
+def _send_manager_status(conn, boot_ms: int) -> None:
+    conn.mav.gimbal_manager_status_send(
+        time_boot_ms=boot_ms,
+        flags=mlc.GIMBAL_MANAGER_FLAGS_PITCH_LOCK,
+        gimbal_device_id=COMPONENT_ID,
+        primary_control_sysid=0,
+        primary_control_compid=0,
+        secondary_control_sysid=0,
+        secondary_control_compid=0,
+    )
+
+
+def _send_attitude_status(conn, boot_ms: int) -> None:
+    q = _make_quat(_pitch_rad, _yaw_rad)
+    conn.mav.gimbal_device_attitude_status_send(
+        target_system=SYSTEM_ID,
+        target_component=MANAGER_COMPONENT_ID,
+        time_boot_ms=boot_ms,
+        flags=(
+            mlc.GIMBAL_DEVICE_FLAGS_PITCH_LOCK |
+            mlc.GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME
+        ),
+        q=q,
+        angular_velocity_x=0.0,
+        angular_velocity_y=0.0,
+        angular_velocity_z=0.0,
+        failure_flags=0,
+        delta_yaw=math.nan,
+        delta_yaw_velocity=math.nan,
+        # For a MAVLink gimbal device, this extension field must be 0.
+        # QGC then uses the MAVLink component id of the message (154) as
+        # the device id. Values > 6 are rejected by QGC.
+        gimbal_device_id=0,
+    )
 
 
 def main() -> None:
@@ -74,20 +148,38 @@ def main() -> None:
     )
     conn.address = (PX4_GIMBAL_HOST, PX4_GIMBAL_LOCAL)
 
+    qgc_host, qgc_port = _parse_host_port(QGC_UI_TARGET)
+    qgc_manager_conn = mavutil.mavlink_connection(
+        f"udpout:{qgc_host}:{qgc_port}",
+        source_system=SYSTEM_ID,
+        source_component=MANAGER_COMPONENT_ID,
+    )
+    qgc_device_conn = mavutil.mavlink_connection(
+        f"udpout:{qgc_host}:{qgc_port}",
+        source_system=SYSTEM_ID,
+        source_component=COMPONENT_ID,
+    )
+
     print(f"[gimbal_sim] Bound to :{PX4_GIMBAL_RX}  →  PX4 at {PX4_GIMBAL_HOST}:{PX4_GIMBAL_LOCAL}")
+    print(f"[gimbal_sim] Mirroring QGC gimbal UI messages → {qgc_host}:{qgc_port}")
     print("[gimbal_sim] Sending GIMBAL_DEVICE_INFORMATION every 1 s …")
 
-    last_info_t   = -999.0
-    last_status_t = -999.0
-    device_acked  = False
+    last_info_t          = -999.0
+    last_status_t        = -999.0
+    last_qgc_info_t      = -999.0
+    last_qgc_status_t    = -999.0
+    last_qgc_attitude_t  = -999.0
+    qgc_mirror_announced = False
+    device_acked         = False
 
     while True:
         now = time.monotonic()
+        boot_ms = int(now * 1000) % 2**32
 
         # Announce device every 1 s until PX4 acknowledges.
         if now - last_info_t >= 1.0:
             conn.mav.gimbal_device_information_send(
-                time_boot_ms=int(now * 1000) % 2**32,
+                time_boot_ms=boot_ms,
                 vendor_name=(b"Sim\x00" + b"\x00" * 28),
                 model_name=(b"SimGimbal\x00" + b"\x00" * 22),
                 custom_name=b"\x00" * 32,
@@ -110,20 +202,24 @@ def main() -> None:
 
         # Report attitude every 0.1 s once the link is active.
         if device_acked and now - last_status_t >= 0.1:
-            q = _make_quat(_pitch_rad, _yaw_rad)
-            conn.mav.gimbal_device_attitude_status_send(
-                target_system=SYSTEM_ID,
-                target_component=1,
-                time_boot_ms=int(now * 1000) % 2**32,
-                flags=mlc.GIMBAL_DEVICE_FLAGS_PITCH_LOCK,
-                q=q,
-                angular_velocity_x=0.0,
-                angular_velocity_y=0.0,
-                angular_velocity_z=0.0,
-                failure_flags=0,
-                gimbal_device_id=COMPONENT_ID,
-            )
+            _send_attitude_status(conn, boot_ms)
             last_status_t = now
+
+        # Mirror the messages QGC needs on its normal telemetry link.
+        if device_acked and now - last_qgc_info_t >= 1.0:
+            _send_manager_information(qgc_manager_conn, boot_ms)
+            last_qgc_info_t = now
+
+        if device_acked and now - last_qgc_status_t >= 1.0:
+            _send_manager_status(qgc_manager_conn, boot_ms)
+            last_qgc_status_t = now
+
+        if device_acked and now - last_qgc_attitude_t >= 0.1:
+            _send_attitude_status(qgc_device_conn, boot_ms)
+            if not qgc_mirror_announced:
+                print("[gimbal_sim] QGC mirror active: MANAGER_INFORMATION + DEVICE_ATTITUDE_STATUS")
+                qgc_mirror_announced = True
+            last_qgc_attitude_t = now
 
         # Process incoming packets from PX4.
         msg = conn.recv_match(blocking=False)

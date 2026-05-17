@@ -5,8 +5,9 @@ Isaac Sim, Pegasus Simulator, PX4 SITL, MAVProxy, and QGroundControl.
 
 The required challenge scope is implemented first: installation notes, PX4 and
 Pegasus integration, explicit MAVProxy routing, QGroundControl telemetry through
-MAVProxy, and basic verification scripts. Optional extensions such as MAVSDK,
-urban environments, gimbal, and camera/video streaming are planned for later
+MAVProxy, and basic verification scripts. Optional extensions for MAVSDK,
+gimbal control, QGroundControl video, and QGroundControl camera/gimbal UI
+discovery are also implemented. The outdoor/urban environment remains future
 work.
 
 ## Documentation
@@ -48,6 +49,7 @@ Configured endpoints:
 | QGroundControl explicit output | `udpout:127.0.0.1:14551` |
 | Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
 | Gimbal control bridge input | `udpout:127.0.0.1:14555` |
+| QGC camera component helper input | `udpout:127.0.0.1:14556` |
 | PX4 direct onboard endpoint, documented but not used by MAVProxy scripts | `127.0.0.1:14540` |
 
 The executable route configuration is in
@@ -78,7 +80,8 @@ Short version:
 | [scripts/stream_gimbal_camera_to_qgc.py](scripts/stream_gimbal_camera_to_qgc.py) | Isaac Sim helper that streams the gimbal-camera render product to QGroundControl as RTP/H.264 over UDP. Uses `capture_on_play=True` so Replicator captures during the normal simulation render pass without extra `step_async()` calls. |
 | [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) | Isaac Sim launch hook that starts both the gimbal camera helper and the offscreen QGroundControl video streamer. |
 | [scripts/gimbal_control_bridge.py](scripts/gimbal_control_bridge.py) | Isaac Sim --exec hook that listens on port 14555 for MAVLink gimbal commands and applies them to the USD gimbal prim each simulation frame. |
-| [scripts/gimbal_device_sim.py](scripts/gimbal_device_sim.py) | Standalone helper that impersonates a MAVLink gimbal device on PX4's gimbal MAVLink instance (13030/13280). Required so PX4's gimbal manager activates and forwards QGC commands to the bridge. |
+| [scripts/gimbal_device_sim.py](scripts/gimbal_device_sim.py) | Standalone helper that impersonates a MAVLink gimbal device on PX4's gimbal MAVLink instance (13030/13280). It also mirrors the gimbal-v2 discovery/status messages QGroundControl needs on the normal 14551 telemetry link. |
+| [scripts/qgc_camera_component_sim.py](scripts/qgc_camera_component_sim.py) | Standalone MAVLink camera component simulator for QGroundControl. It advertises the RTP/H.264 video stream, serves a small camera definition XML, and associates the camera with the simulated gimbal device so QGC can build its camera tools UI. |
 
 None of the verification scripts arm, take off, change modes, or move the
 vehicle. MAVSDK may perform internal telemetry stream setup over MAVLink, but
@@ -95,6 +98,7 @@ Curated screenshots are stored in [evidence/](evidence/):
 | [evidence/qgc-comm-links.png](evidence/qgc-comm-links.png) | QGroundControl Comm Links screen with AutoConnect disabled and manual MAVProxy link listed. |
 | [evidence/qgc-manual-link-settings-14551.png](evidence/qgc-manual-link-settings-14551.png) | QGroundControl manual UDP link configured for the explicit MAVProxy port `14551`. |
 | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) | QGroundControl telemetry through the explicit MAVProxy endpoint. |
+| [evidence/GimbalControlOnQGC.png](evidence/GimbalControlOnQGC.png) | QGroundControl Fly View with video, camera tools, and the gimbal toolbar indicator active. |
 
 ### Screenshot Previews
 
@@ -118,10 +122,14 @@ QGroundControl telemetry through MAVProxy:
 
 ![QGroundControl MAVProxy telemetry](evidence/qgroundcontrol-mavproxy-telemetry.png)
 
+QGroundControl gimbal/camera UI:
+
+![QGroundControl gimbal control](evidence/GimbalControlOnQGC.png)
+
 A screencast is not required for the current required scope because the
 repository already includes screenshots plus command/script validation outputs.
-If optional gimbal, camera, or video streaming tasks are implemented later, a
-short screencast would be useful evidence.
+For the optional gimbal/video workflow, a short screencast is still useful as
+additional evidence when preparing a final report.
 
 ## PX4 Parameters
 
@@ -136,7 +144,8 @@ the default PX4/Pegasus Iris configuration.
   Extensions UI, so the extension is passed at launch time with `--ext-folder`.
 - QGroundControl AutoConnect should be disabled and QGroundControl restarted
   before validating the explicit MAVProxy route.
-- Remaining optional tasks are listed below.
+- The outdoor / urban Isaac Sim environment remains the only optional task not
+  implemented in this repository.
 
 ## Optional Work
 
@@ -147,7 +156,7 @@ Optional challenge items:
 | Outdoor / urban Isaac Sim environment | Pending |
 | Gimbal and camera | Complete |
 | Camera video in QGroundControl | Implemented; uses `capture_on_play=True` (lockstep-safe, no `step_async`) |
-| Gimbal control from QGroundControl | Complete |
+| Gimbal control from QGroundControl | Complete; ROI, MAVProxy pitch/yaw, and Fly View gimbal UI validated |
 | True MAVSDK client on the spare port | Complete |
 
 The spare MAVSDK/script route at `127.0.0.1:14542` is configured and validated
@@ -165,3 +174,9 @@ sends it to QGroundControl as RTP/H.264 over UDP on port `5600`.
 Use [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) when both the
 gimbal camera and video streamer should start from a single Isaac Sim `--exec`
 hook.
+
+QGroundControl camera discovery is implemented with
+[scripts/qgc_camera_component_sim.py](scripts/qgc_camera_component_sim.py).
+Start it beside the gimbal device simulator when you want QGroundControl's
+camera tools panel and Fly View gimbal toolbar indicator instead of only
+ROI/MAVProxy gimbal commands.

@@ -1228,18 +1228,25 @@ set_gimbal_angles(yaw_deg=20.0, pitch_deg=-15.0)
 The helper clamps pitch to `-90..30` degrees to avoid pointing the camera back
 into the UAV body.
 
-Limitations:
+Follow-up implementation:
 
-- This is a simulation-side visual gimbal/camera attachment.
-- It does not yet stream video to QGroundControl.
-- It does not yet implement MAVLink gimbal control from QGroundControl.
+- QGroundControl video streaming was added with
+  `scripts/stream_gimbal_camera_to_qgc.py` and
+  `scripts/setup_gimbal_video.py`.
+- MAVLink gimbal control was added with `scripts/gimbal_device_sim.py` and
+  `scripts/gimbal_control_bridge.py`.
+- QGroundControl camera discovery and Fly View camera/gimbal UI support
+  were added with `scripts/qgc_camera_component_sim.py` plus the QGC-facing
+  gimbal-v2 discovery/status mirror in `scripts/gimbal_device_sim.py`.
+- The working UI path was validated in QGroundControl: the Vehicle Setup Camera
+  page, Fly View camera tools panel, and Fly View gimbal toolbar indicator
+  appear, and the gimbal follows ROI/MAVProxy pitch-yaw commands.
 
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
-- Broader command-level verification, such as arming or takeoff readiness, is
-  still pending.
+- The outdoor / urban Isaac Sim environment remains a future optional extension.
 
 ## References
 

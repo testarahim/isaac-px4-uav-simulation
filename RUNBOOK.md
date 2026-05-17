@@ -1,8 +1,9 @@
 # Runbook
 
 This runbook describes the repeatable startup and verification flow for the UAV
-simulation setup. It covers the required challenge scope only; optional tasks are
-planned for later work.
+simulation setup. It covers the required challenge scope plus the implemented
+optional MAVSDK, gimbal, camera, QGroundControl video, and QGroundControl
+camera/gimbal UI workflows.
 
 ## One-Time Shell Setup
 
@@ -262,8 +263,8 @@ Protocol and ports:
 | Transport | UDP |
 | Payload | RTP carrying H.264 video |
 | Default destination | `127.0.0.1:5600` |
-| Default render size | `640x360` |
-| Default frame rate | `5 FPS` |
+| Default render size | `1280x720` |
+| Default frame rate | `30 FPS` |
 | QGroundControl video source | `UDP h.264 Video Stream` |
 
 In QGroundControl:
@@ -294,10 +295,10 @@ Useful optional overrides:
 | `QGC_VIDEO_HOST` | `127.0.0.1` | Destination host running QGroundControl. |
 | `QGC_VIDEO_PORT` | `5600` | Destination UDP video port. |
 | `QGC_VIDEO_CAMERA_PATH` | `/World/quadrotor/body/GimbalAssembly/GimbalYaw/GimbalPitch/CameraOpticalFrame/GimbalCamera` | Isaac Sim camera prim to render. |
-| `QGC_VIDEO_WIDTH` | `640` | Offscreen render width. |
-| `QGC_VIDEO_HEIGHT` | `360` | Offscreen render height. |
-| `QGC_VIDEO_FPS` | `5` | Stream frame rate. |
-| `QGC_VIDEO_BITRATE_KBPS` | `500` | H.264 bitrate. |
+| `QGC_VIDEO_WIDTH` | `1280` | Offscreen render width. |
+| `QGC_VIDEO_HEIGHT` | `720` | Offscreen render height. |
+| `QGC_VIDEO_FPS` | `30` | Stream frame rate. |
+| `QGC_VIDEO_BITRATE_KBPS` | `6500` | H.264 bitrate. |
 | `QGC_VIDEO_DURATION_S` | `0` | Optional auto-stop duration. `0` means run until Isaac Sim exits. |
 
 Expected result:
@@ -327,10 +328,11 @@ For short video evidence capture that stops automatically after 30 seconds:
 ```bash
 QGC_VIDEO_DURATION_S=30 isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py
 ```
-- The helper does not add camera discovery over MAVLink; QGroundControl is
-  configured manually to receive the UDP H.264 stream.
-- This does not implement QGroundControl gimbal control. That remains the next
-  optional task.
+
+Camera discovery and QGroundControl Fly View gimbal UI support are provided by the
+separate `scripts/qgc_camera_component_sim.py` and `scripts/gimbal_device_sim.py`
+helpers described in the gimbal control section below. Keep the UDP H.264 video
+source configured in QGroundControl for the live camera feed.
 
 ## Optional Gimbal Control from QGroundControl
 
@@ -354,9 +356,15 @@ QGC Fly View  →  MAVProxy 14551
    (acknowledges device          → USD prim update in Isaac Sim
     so PX4 gimbal manager
     stays active)
+
+  qgc_camera_component_sim.py
+  → MAV_TYPE_CAMERA heartbeat + CAMERA_INFORMATION
+  → VIDEO_STREAM_INFORMATION udp://127.0.0.1:5600
+  → camera definition XML on localhost
+  → QGroundControl camera tools/gimbal UI discovery
 ```
 
-### Why two simulated components are needed
+### Why simulated gimbal and camera components are needed
 
 PX4's gimbal manager only starts and broadcasts `GIMBAL_MANAGER_*` messages
 when at least one **gimbal device** has answered on the dedicated MAVLink
@@ -364,6 +372,21 @@ gimbal instance (port `13030`/`13280`). Because PX4 SITL ships no gimbal
 hardware, `scripts/gimbal_device_sim.py` impersonates that device and answers
 the handshake. Once it does, the manager activates and the bridge can drive
 the Isaac Sim USD prim from any command source.
+
+QGroundControl's persistent camera tools/gimbal widget has an additional
+camera-discovery requirement. `scripts/qgc_camera_component_sim.py` impersonates
+a MAVLink camera component (`MAV_TYPE_CAMERA`, component `100`), advertises the
+existing RTP/H.264 video stream, serves a small camera definition XML, and sets
+`CAMERA_INFORMATION.gimbal_device_id = 154` so QGC can associate the camera
+with the simulated gimbal device.
+
+QGroundControl also requires all three gimbal-v2 discovery/status messages
+on the normal QGC telemetry link before the Fly View gimbal indicator is added:
+`GIMBAL_MANAGER_INFORMATION` from component `1`, `GIMBAL_MANAGER_STATUS` from
+component `1`, and `GIMBAL_DEVICE_ATTITUDE_STATUS` from component `154`.
+`scripts/gimbal_device_sim.py` mirrors those QGC-facing messages to
+`127.0.0.1:14551` while still maintaining the PX4 gimbal handshake on
+`13030`/`13280`.
 
 The PX4 airframe file `10015_gazebo-classic_iris` sets the bootstrap defaults:
 
@@ -389,14 +412,18 @@ rm ~/PX4-Autopilot/build/px4_sitl_default/rootfs/parameters.bson \
 | QGroundControl output | `udpout:127.0.0.1:14551` |
 | Spare MAVSDK/script output | `udpout:127.0.0.1:14542` |
 | Gimbal control bridge input | `udpout:127.0.0.1:14555` |
+| QGC camera component helper | `udpout:127.0.0.1:14556` |
 | PX4 gimbal MAVLink instance (PX4 listen) | `127.0.0.1:13030` |
 | Simulated gimbal device (script listen) | `0.0.0.0:13280` |
+| QGroundControl camera/video control component | `0.0.0.0:14556` |
+| QGC gimbal UI mirror | `udpout:127.0.0.1:14551` |
+| Camera definition HTTP server | `http://127.0.0.1:8011/qgc-camera-definition.xml` |
 
 ### Startup order
 
 Follow the normal startup order (steps 0–4) to launch Isaac Sim, load the
 Pegasus scene and Iris vehicle, start MAVProxy, and connect QGroundControl.
-Then add the two gimbal helpers:
+Then add the gimbal and camera helpers:
 
 #### 5a. Start the simulated gimbal device
 
@@ -410,8 +437,30 @@ Expected output within a second or two:
 
 ```text
 [gimbal_sim] Bound to :13280  →  PX4 at 127.0.0.1:13030
+[gimbal_sim] Mirroring QGC gimbal UI messages → 127.0.0.1:14551
 [gimbal_sim] GIMBAL_DEVICE_INFORMATION sent → waiting for PX4 reply …
 [gimbal_sim] First PX4 reply: GIMBAL_DEVICE_SET_ATTITUDE — handshake established!
+[gimbal_sim] QGC mirror active: MANAGER_INFORMATION + DEVICE_ATTITUDE_STATUS
+```
+
+For QGC's Fly View gimbal indicator to appear, the simulator sends
+`GIMBAL_DEVICE_ATTITUDE_STATUS` from component `154` with
+`gimbal_device_id = 0`. QGC then uses the MAVLink component id as the gimbal
+device id. If an older helper process is still running and sending
+`gimbal_device_id = 154` inside the status message, QGC rejects the attitude
+status and the gimbal UI remains hidden.
+
+The Vehicle Setup **Camera** page can appear once the camera component is
+discovered, but the Fly View gimbal toolbar indicator still waits for complete
+gimbal-v2 discovery. In Analyze Tools → MAVLink Inspector, confirm these
+messages are present after restarting the helpers:
+
+```text
+1   GIMBAL_MANAGER_INFORMATION
+1   GIMBAL_MANAGER_STATUS
+154 GIMBAL_DEVICE_ATTITUDE_STATUS
+154 GIMBAL_DEVICE_INFORMATION
+100 CAMERA_INFORMATION
 ```
 
 #### 5b. Launch Isaac Sim with the gimbal control bridge
@@ -443,6 +492,27 @@ the gimbal prim) and `stream_gimbal_camera_to_qgc.py` (starts the RTP/H.264
 video stream to QGC port `5600`). The bridge is then added as the third hook.
 With this option, QGroundControl receives both MAVLink telemetry and a live
 video feed that follows the gimbal angle you command.
+
+#### 5c. Start the QGroundControl camera component simulator
+
+In a separate terminal:
+
+```bash
+python3 /home/test/Desktop/Case-Study/scripts/qgc_camera_component_sim.py
+```
+
+Expected startup output:
+
+```text
+[camera_sim] Camera definition: http://127.0.0.1:8011/qgc-camera-definition.xml
+[camera_sim] Component sysid=1 compid=100 listening on :14556, QGC target 127.0.0.1:14551
+[camera_sim] Video stream advertised as udp://127.0.0.1:5600
+[camera_sim] Associated gimbal_device_id=154
+```
+
+QGC should now see a MAVLink camera component in addition to the PX4 vehicle and
+the gimbal manager. If QGC was already open before this helper started, restart
+QGC or disconnect/reconnect the manual UDP link so camera discovery runs again.
 
 ### Controlling the gimbal from QGroundControl
 
@@ -483,14 +553,14 @@ Got COMMAND_ACK: DO_GIMBAL_MANAGER_PITCHYAW: ACCEPTED
 Sending `long 1000 -45 -90 0 0 0 0 0` then `long 1000 0 0 0 0 0 0 0` exercises
 range limits and recenter.
 
-### Note on the QGC Fly View gimbal slider
+### Note on the QGC Fly View gimbal/camera widget
 
-A persistent pitch slider in the Fly View camera widget requires QGroundControl
-to recognise a fully-defined camera component (CAMERA_INFORMATION with a valid
-`cam_definition_uri` XML). PX4 SITL provides no camera component, so this
-specific GUI element does not appear in this setup. Map ROI clicks and mission
-ROI items remain the GUI control paths; the MAVLink CLI commands above cover
-precise-angle use cases.
+ROI and direct MAVProxy pitch/yaw commands only require PX4's gimbal manager.
+The persistent Fly View camera tools widget additionally requires QGC to
+discover a MAVLink camera component, and the gimbal toolbar indicator
+requires complete gimbal-v2 discovery/status on the normal telemetry link.
+Start both `scripts/gimbal_device_sim.py` and
+`scripts/qgc_camera_component_sim.py` for that UI path.
 
 ### What works / what does not
 
@@ -504,7 +574,7 @@ precise-angle use cases.
 | `MOUNT_CONTROL` legacy command fallback in bridge | Implemented |
 | Gimbal prim update visible in Isaac Sim viewport | Working |
 | Live QGC video tracking the commanded angle | Working in Option B |
-| Persistent Fly View pitch slider widget | Not available — requires camera definition XML |
+| Persistent QGC Fly View camera/gimbal widget | Working with `gimbal_device_sim.py` and `qgc_camera_component_sim.py` |
 | Physical gimbal stabilisation feedback | Not applicable — simulation only |
 
 ## Evidence
@@ -516,6 +586,7 @@ Curated evidence is stored under `evidence/`:
 | `isaac-sim-first-launch.png` | Isaac Sim 5.1.0 launched successfully. |
 | `pegasus-extension-launch.png` | Pegasus extension and Iris vehicle visible in Isaac Sim. |
 | `qgroundcontrol-mavproxy-telemetry.png` | QGroundControl telemetry through explicit MAVProxy endpoint. |
+| `GimbalControlOnQGC.png` | QGroundControl Fly View with video, camera tools, and gimbal toolbar indicator active. |
 
 ## Known Limitations
 
@@ -526,8 +597,7 @@ Curated evidence is stored under `evidence/`:
 - The urban environment optional task remains pending future work. The
   read-only MAVSDK client, Isaac Sim gimbal camera attachment, QGroundControl
   video helper, and gimbal control from QGC are implemented and validated.
-- QGC's Fly View persistent pitch slider widget requires a fully-defined
-  camera component (CAMERA_INFORMATION + cam_definition_uri XML). PX4 SITL
-  does not provide one, so gimbal aiming from the QGC GUI is done via map
-  ROI right-click or mission ROI waypoints. Precise-angle control uses the
-  MAVProxy MAVLink CLI commands documented in the gimbal control section.
+- QGC's Fly View persistent camera/gimbal widget requires a camera component in
+  addition to PX4's gimbal manager. Use `scripts/qgc_camera_component_sim.py`
+  for that UI path. Map ROI, mission ROI, and MAVProxy direct pitch/yaw remain
+  available even when the camera component helper is not running.
