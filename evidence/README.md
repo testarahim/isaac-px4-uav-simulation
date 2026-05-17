@@ -18,3 +18,5 @@ working parts of the setup.
 - Raw or failed experiment captures should stay out of git.
 - Only selected evidence files that support the final submission should be kept
   in this directory.
+- The optional QGroundControl video workflow currently has a repeatable
+  streaming helper but no curated screenshot committed yet.

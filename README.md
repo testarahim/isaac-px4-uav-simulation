@@ -74,6 +74,8 @@ Short version:
 | [scripts/verify_mavlink_live.py](scripts/verify_mavlink_live.py) | Live MAVLink heartbeat and telemetry check through the QGroundControl route. |
 | [scripts/report_preflight_status.py](scripts/report_preflight_status.py) | Read-only preflight/status snapshot through the spare MAVSDK/script route. |
 | [scripts/mavsdk_status_client.py](scripts/mavsdk_status_client.py) | Read-only MAVSDK client that connects to the spare port and prints connection state, position, attitude, flight mode, battery, and armed state. |
+| [scripts/stream_gimbal_camera_to_qgc.py](scripts/stream_gimbal_camera_to_qgc.py) | Isaac Sim helper that streams the gimbal-camera render product to QGroundControl as RTP/H.264 over UDP. Uses `capture_on_play=True` so Replicator captures during the normal simulation render pass without extra `step_async()` calls. |
+| [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) | Isaac Sim launch hook that starts both the gimbal camera helper and the offscreen QGroundControl video streamer. |
 
 None of the verification scripts arm, take off, change modes, or move the
 vehicle. MAVSDK may perform internal telemetry stream setup over MAVLink, but
@@ -141,7 +143,7 @@ Optional challenge items:
 | --- | --- |
 | Outdoor / urban Isaac Sim environment | Pending |
 | Gimbal and camera | Complete |
-| Camera video in QGroundControl | Pending |
+| Camera video in QGroundControl | Implemented; uses `capture_on_play=True` (lockstep-safe, no `step_async`) |
 | Gimbal control from QGroundControl | Pending |
 | True MAVSDK client on the spare port | Complete |
 
@@ -152,3 +154,11 @@ The optional gimbal/camera workflow is implemented with
 [scripts/add_gimbal_camera.py](scripts/add_gimbal_camera.py). It attaches a
 simple gimbal transform hierarchy and camera prim under the Pegasus Iris vehicle
 body, then switches the Isaac Sim viewport to that camera.
+
+The optional QGroundControl video path is implemented with
+[scripts/stream_gimbal_camera_to_qgc.py](scripts/stream_gimbal_camera_to_qgc.py).
+It creates an offscreen Isaac Sim render product from the gimbal camera and
+sends it to QGroundControl as RTP/H.264 over UDP on port `5600`.
+Use [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) when both the
+gimbal camera and video streamer should start from a single Isaac Sim `--exec`
+hook.

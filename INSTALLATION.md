@@ -992,6 +992,29 @@ Interpretation:
   `127.0.0.1:14551`, or another process already owns the expected UDP listener
   port.
 
+Follow-up troubleshooting note:
+
+- During later optional video-streaming experiments, QGroundControl stopped
+  connecting even though the repository MAVLink routing configuration had not
+  changed.
+- Port/process inspection showed QGroundControl listening on `14551` and a
+  leftover PX4 SITL process still running, while MAVProxy and the fresh
+  Isaac/Pegasus process were not part of a clean active chain.
+- Stopping the stale PX4 process before restarting the normal workflow restored
+  the expected connection behavior.
+- Before each new validation run, check for stale processes with:
+
+```bash
+ps -ef | rg "px4|mavproxy.py" | rg -v "rg "
+```
+
+Stop stale processes if needed:
+
+```bash
+pkill -f "/home/test/PX4-Autopilot/build/px4_sitl_default/bin/px4"
+pkill -f mavproxy.py
+```
+
 ### Read-Only Preflight Status Report
 
 A read-only preflight/status reporting script was added as the next step before
