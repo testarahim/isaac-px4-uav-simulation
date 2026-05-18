@@ -1435,6 +1435,95 @@ Final validation:
 evidence/GimbalControlOnQGC.png
 ```
 
+### Standalone Isaac Sim Launcher
+
+To remove the manual Load Scene → Load Vehicle → Play GUI steps, a standalone
+Python script was added:
+
+```bash
+scripts/sim_standalone.py
+```
+
+Purpose:
+
+- Replaces the Pegasus GUI workflow entirely.
+- Uses `SimulationApp` + `PegasusInterface` to load the scene, spawn the Iris
+  vehicle, register the gimbal/video hooks, and start the simulation timeline
+  programmatically.
+- Accepts an optional `SIM_ENVIRONMENT` environment variable to select the
+  Pegasus scene name (default: `"Default Environment"`).
+- Accepts `SIM_HEADLESS=1` to disable the viewport window.
+
+Run with:
+
+```bash
+"$ISAACSIM_PYTHON" scripts/sim_standalone.py
+```
+
+Equivalent to what the GUI previously did:
+
+| Manual GUI step | Script equivalent |
+| --- | --- |
+| Load Scene | `pg.load_environment(SIMULATION_ENVIRONMENTS[ENVIRONMENT])` |
+| Load Vehicle | `Multirotor("/World/quadrotor", ROBOTS["Iris"], ...)` |
+| Press Play | `timeline.play()` |
+
+The script also registers the `setup_gimbal_video.py` and
+`gimbal_control_bridge.py` hooks before starting the timeline, so the gimbal
+camera and video stream come up automatically without separate `--exec` flags.
+
+If a new stage is opened from the GUI while the script is running, a stage-event
+subscription detects it and shuts the simulation loop down cleanly instead of
+crashing.
+
+### Stack Launcher With tmux
+
+To reduce startup to a single command, a launcher script was added:
+
+```bash
+launch_stack.sh
+```
+
+Prerequisites:
+
+```bash
+sudo apt-get install -y tmux
+```
+
+The launcher creates a tmux session named `sim-stack` with five windows:
+
+| Window | Command |
+| --- | --- |
+| `Isaac Sim` | `"$ISAACSIM_PYTHON" scripts/sim_standalone.py` |
+| `MAVProxy` | `bash configs/run_mavproxy.sh` |
+| `Camera Sim` | `python3 scripts/qgc_camera_component_sim.py` |
+| `Gimbal Sim` | `python3 scripts/gimbal_device_sim.py` |
+| `QGroundControl` | `~/Downloads/QGroundControl-x86_64.AppImage` |
+
+Usage:
+
+```bash
+./launch_stack.sh
+```
+
+The script attaches to the tmux session automatically. Useful tmux key bindings
+inside the session:
+
+| Keys | Action |
+| --- | --- |
+| `Ctrl+B` then `0`–`4` | Switch to window by index |
+| `Ctrl+B` then `n` / `p` | Next / previous window |
+| `Ctrl+B` then `d` | Detach (session keeps running) |
+| `tmux attach -t sim-stack` | Re-attach from any terminal |
+| `tmux kill-session -t sim-stack` | Stop all windows and exit |
+
+If a previous session is still running, the script attaches to it instead of
+creating a new one. Kill the old session first if a clean restart is needed:
+
+```bash
+tmux kill-session -t sim-stack
+```
+
 ## Current Blockers And Next Checks
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM

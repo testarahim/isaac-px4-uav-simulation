@@ -59,15 +59,35 @@ The executable route configuration is in
 
 For full startup details, follow [RUNBOOK.md](RUNBOOK.md).
 
-Short version:
+### One-command launch (recommended)
+
+After the one-time shell setup in [RUNBOOK.md](RUNBOOK.md):
+
+```bash
+./launch_stack.sh
+```
+
+This opens a tmux session with five windows — Isaac Sim, MAVProxy, Camera Sim,
+Gimbal Sim, and QGroundControl — and starts everything automatically. The
+`Ctrl+B` then `0`–`4` keys switch between windows.
+
+### Manual launch (step by step)
 
 1. Complete the one-time shell setup in [RUNBOOK.md](RUNBOOK.md).
-2. Launch Isaac Sim with the Pegasus extension.
-3. Load the Pegasus scene and Iris vehicle.
-4. Press Isaac Sim `Play`.
-5. Start MAVProxy with [configs/run_mavproxy.sh](configs/run_mavproxy.sh).
-6. Connect QGroundControl to the explicit UDP link at `127.0.0.1:14551`.
+2. Run `"$ISAACSIM_PYTHON" scripts/sim_standalone.py` — loads the scene,
+   spawns the Iris vehicle, and presses Play automatically.
+3. Start MAVProxy with [configs/run_mavproxy.sh](configs/run_mavproxy.sh).
+4. Start the gimbal device simulator: `python3 scripts/gimbal_device_sim.py`.
+5. Start the camera component simulator: `python3 scripts/qgc_camera_component_sim.py`.
+6. Launch QGroundControl and connect to the explicit UDP link at `127.0.0.1:14551`.
 7. Run the verification scripts from `scripts/`.
+
+## Launch Scripts
+
+| Script | Purpose |
+| --- | --- |
+| [launch_stack.sh](launch_stack.sh) | Single-command launcher. Opens a tmux session with Isaac Sim, MAVProxy, Camera Sim, Gimbal Sim, and QGroundControl each in their own window. |
+| [scripts/sim_standalone.py](scripts/sim_standalone.py) | Standalone Isaac Sim launcher that replaces the manual Load Scene → Load Vehicle → Play GUI workflow. Accepts `SIM_ENVIRONMENT` and `SIM_HEADLESS` environment variables. |
 
 ## Verification Scripts
 

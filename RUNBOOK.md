@@ -5,6 +5,42 @@ simulation setup. It covers the required challenge scope plus the implemented
 optional MAVSDK, gimbal, camera, QGroundControl video, and QGroundControl
 camera/gimbal UI workflows.
 
+## Quick Launch
+
+After the one-time shell setup below, the entire stack can be started with a
+single command:
+
+```bash
+./launch_stack.sh
+```
+
+This creates a tmux session named `sim-stack` with five windows:
+
+| Window | Service |
+| --- | --- |
+| `0: Isaac Sim` | Loads scene, spawns Iris vehicle, starts Play automatically |
+| `1: MAVProxy` | Routes MAVLink from PX4 to all consumers |
+| `2: Camera Sim` | MAVLink camera component for QGroundControl discovery |
+| `3: Gimbal Sim` | Simulated MAVLink gimbal device + QGC gimbal UI mirror |
+| `4: QGroundControl` | GCS connected to the explicit MAVProxy UDP link |
+
+Switch between windows with `Ctrl+B` then `0`–`4`. Detach with `Ctrl+B` then
+`d`; the session keeps running in the background. Re-attach with:
+
+```bash
+tmux attach -t sim-stack
+```
+
+Stop everything with:
+
+```bash
+tmux kill-session -t sim-stack
+```
+
+The manual step-by-step startup order below is kept as reference documentation.
+Use it when you need to start individual components independently or when
+troubleshooting.
+
 ## One-Time Shell Setup
 
 Add the Isaac Sim/Pegasus helper environment to `~/.bashrc` once:
@@ -53,35 +89,46 @@ Why this matters:
 
 ### 1. Launch Isaac Sim With Pegasus
 
-Open a new terminal after the one-time shell setup and run:
+The recommended path uses the standalone launcher, which automates the Load
+Scene → Load Vehicle → Play GUI steps:
 
 ```bash
-isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py
+"$ISAACSIM_PYTHON" /home/test/Desktop/Case-Study/scripts/sim_standalone.py
 ```
 
-Notes:
+What the script does automatically:
 
-- This launch method is reproducible and was validated with the Pegasus panel
-  visible in Isaac Sim.
-- The `--exec` hook starts the optional gimbal/camera helper. If the Iris
-  vehicle is not loaded yet, the helper waits and attaches the gimbal camera
-  when `/World/quadrotor/body` appears.
+1. Loads the Pegasus scene (`Default Environment` by default).
+2. Spawns the Iris vehicle at `/World/quadrotor`.
+3. Registers the gimbal camera + video stream + control bridge hooks.
+4. Calls `timeline.play()`.
 
-### 2. Load Scene And Vehicle
+Optional environment variables:
 
-In Isaac Sim:
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `SIM_ENVIRONMENT` | `Default Environment` | Pegasus scene name |
+| `SIM_HEADLESS` | `0` | Set to `1` to disable the viewport window |
 
-1. Open the `Pegasus Simulator` panel.
-2. Click `Load Scene`.
-3. Click `Load Vehicle`.
-4. Select the Iris vehicle with vehicle ID `0`.
-5. Press Isaac Sim `Play`.
+Expected PX4/Pegasus output after the scene is loaded and Play starts:
 
-Expected PX4/Pegasus behavior:
+```text
+INFO  [simulator_mavlink] Simulator connected on TCP port 4560.
+Received first hearbeat
+INFO  [commander] Ready for takeoff!
+```
 
-- PX4 connects to Pegasus on TCP port `4560`.
-- Pegasus receives the first MAVLink heartbeat.
-- PX4 reports `Ready for takeoff`.
+Alternative — legacy GUI workflow (kept for reference):
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+```
+
+Then in the Pegasus panel: click `Load Scene`, click `Load Vehicle` (Iris,
+ID 0), press `Play`.
 
 ### 3. Start MAVProxy Routing
 
