@@ -1228,19 +1228,212 @@ set_gimbal_angles(yaw_deg=20.0, pitch_deg=-15.0)
 The helper clamps pitch to `-90..30` degrees to avoid pointing the camera back
 into the UAV body.
 
-Follow-up implementation:
+### QGroundControl Video Streaming
 
-- QGroundControl video streaming was added with
-  `scripts/stream_gimbal_camera_to_qgc.py` and
-  `scripts/setup_gimbal_video.py`.
-- MAVLink gimbal control was added with `scripts/gimbal_device_sim.py` and
-  `scripts/gimbal_control_bridge.py`.
-- QGroundControl camera discovery and Fly View camera/gimbal UI support
-  were added with `scripts/qgc_camera_component_sim.py` plus the QGC-facing
-  gimbal-v2 discovery/status mirror in `scripts/gimbal_device_sim.py`.
-- The working UI path was validated in QGroundControl: the Vehicle Setup Camera
-  page, Fly View camera tools panel, and Fly View gimbal toolbar indicator
-  appear, and the gimbal follows ROI/MAVProxy pitch-yaw commands.
+After the visual gimbal camera attachment was working, a QGroundControl video
+path was added:
+
+```bash
+scripts/stream_gimbal_camera_to_qgc.py
+scripts/setup_gimbal_video.py
+```
+
+Implementation notes:
+
+- `stream_gimbal_camera_to_qgc.py` creates an offscreen Isaac Sim Replicator
+  render product from the gimbal camera prim.
+- RGB frames are read passively from the annotator and piped to GStreamer.
+- GStreamer encodes H.264 and sends RTP/H.264 over UDP to QGroundControl on
+  port `5600`.
+- The helper uses `capture_on_play=True` instead of explicit
+  `rep.orchestrator.step_async()` calls. This keeps the PX4/Pegasus lockstep
+  timing responsive and avoids delayed QGroundControl takeoff/action handling.
+- `setup_gimbal_video.py` runs both the gimbal camera attachment and the video
+  streaming helper from a single Isaac Sim `--exec` launch path.
+
+Default video settings:
+
+| Item | Value |
+| --- | --- |
+| Destination | `127.0.0.1:5600` |
+| Format | RTP/H.264 over UDP |
+| Resolution | `1280x720` |
+| Frame rate | `30 FPS` |
+| Bitrate | `6500 kbps` |
+
+QGroundControl setup:
+
+- Set `Application Settings` / `General` / `Video Source` to
+  `UDP h.264 Video Stream`.
+- Set the UDP video port to `5600`.
+- Return to Fly View and start the Isaac Sim video helper.
+
+One-command Isaac Sim launch hook:
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py
+```
+
+Expected result:
+
+- QGroundControl shows the simulated gimbal-camera feed in Fly View.
+- MAVLink telemetry continues through MAVProxy on the existing explicit route;
+  the video stream is a separate UDP media path.
+
+### MAVLink Gimbal Control Bridge
+
+After video streaming, MAVLink gimbal control was added with:
+
+```bash
+scripts/gimbal_device_sim.py
+scripts/gimbal_control_bridge.py
+```
+
+PX4 SITL does not provide real gimbal hardware, so the workflow needs a
+simulated gimbal device:
+
+- `gimbal_device_sim.py` impersonates a MAVLink gimbal device using component
+  `154`.
+- PX4's dedicated gimbal MAVLink instance listens on `127.0.0.1:13030`.
+- The simulated gimbal device binds to `0.0.0.0:13280` and sends discovery and
+  status messages back to PX4.
+- Once PX4 receives the simulated device information, its gimbal manager starts
+  and emits gimbal-v2 manager messages.
+
+The PX4 mount/gimbal defaults used for this path are:
+
+```bash
+param set-default MNT_MODE_IN 4
+param set-default MNT_MODE_OUT 2
+```
+
+The Isaac Sim bridge side is handled by `gimbal_control_bridge.py`:
+
+- It runs as an Isaac Sim `--exec` hook after the gimbal camera hierarchy
+  exists.
+- It listens on UDP port `14555`, which MAVProxy forwards to with:
+
+```text
+--out=udpout:127.0.0.1:14555
+```
+
+- It accepts `GIMBAL_DEVICE_SET_ATTITUDE`,
+  `GIMBAL_MANAGER_SET_ATTITUDE`, `MOUNT_CONTROL`, and legacy
+  `MAV_CMD_DO_MOUNT_CONTROL` shapes.
+- It converts the MAVLink attitude command into yaw/pitch degrees and applies
+  the transform to the USD gimbal yaw/pitch prims.
+
+The complete gimbal-control launch path with video is:
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+```
+
+Expected gimbal simulator output:
+
+```text
+[gimbal_sim] Bound to :13280  ->  PX4 at 127.0.0.1:13030
+[gimbal_sim] GIMBAL_DEVICE_INFORMATION sent -> waiting for PX4 reply ...
+[gimbal_sim] First PX4 reply: GIMBAL_DEVICE_SET_ATTITUDE - handshake established!
+```
+
+Direct MAVProxy validation commands:
+
+```text
+long 1001 255 230 -1 -1 0 0 0
+long 1000 -30 45 0 0 0 0 0
+```
+
+Expected validation result:
+
+- PX4 acknowledges `MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE`.
+- PX4 acknowledges `MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW`.
+- `gimbal_device_sim.py` prints the commanded pitch/yaw.
+- `gimbal_control_bridge.py` prints the applied yaw/pitch.
+- The Isaac Sim gimbal camera view moves accordingly.
+
+### QGroundControl Camera Discovery And Gimbal UI
+
+The final step was enabling QGroundControl's camera/gimbal UI rather than only
+ROI and MAVProxy command control. This was added with:
+
+```bash
+scripts/qgc_camera_component_sim.py
+```
+
+Camera component behavior:
+
+- The helper emits a `MAV_TYPE_CAMERA` heartbeat as component `100`.
+- It answers QGroundControl camera discovery requests with
+  `CAMERA_INFORMATION`.
+- It advertises the existing RTP/H.264 stream using
+  `VIDEO_STREAM_INFORMATION`.
+- It serves a small camera definition XML from localhost, for example:
+
+```text
+http://127.0.0.1:8011/qgc-camera-definition.xml
+```
+
+- It associates the camera with the simulated gimbal by setting
+  `CAMERA_INFORMATION.gimbal_device_id = 154`.
+
+The camera helper runs beside the PX4/MAVProxy/QGroundControl stack:
+
+```bash
+python3 /home/test/Desktop/Case-Study/scripts/qgc_camera_component_sim.py
+```
+
+Expected output:
+
+```text
+[camera_sim] Camera definition: http://127.0.0.1:8011/qgc-camera-definition.xml
+[camera_sim] Component sysid=1 compid=100 listening on :14556, QGC target 127.0.0.1:14551
+[camera_sim] Video stream advertised as udp://127.0.0.1:5600
+[camera_sim] Associated gimbal_device_id=154
+```
+
+One additional detail was required for the Fly View gimbal toolbar indicator:
+QGroundControl waits for complete gimbal-v2 discovery/status on the normal
+telemetry link. The simulated gimbal device therefore mirrors these messages to
+`127.0.0.1:14551`:
+
+- `GIMBAL_MANAGER_INFORMATION` from component `1`.
+- `GIMBAL_MANAGER_STATUS` from component `1`.
+- `GIMBAL_DEVICE_ATTITUDE_STATUS` from component `154`.
+
+For `GIMBAL_DEVICE_ATTITUDE_STATUS`, the extension field
+`gimbal_device_id` must be `0`; QGroundControl then uses the MAVLink component
+id `154` as the gimbal device id. Sending `154` inside the status message
+caused QGroundControl to reject the status as invalid and hide the Fly View
+gimbal indicator.
+
+Expected QGroundControl MAVLink Inspector messages:
+
+```text
+1   GIMBAL_MANAGER_INFORMATION
+1   GIMBAL_MANAGER_STATUS
+154 GIMBAL_DEVICE_ATTITUDE_STATUS
+154 GIMBAL_DEVICE_INFORMATION
+100 CAMERA_INFORMATION
+```
+
+Final validation:
+
+- Vehicle Setup shows the Camera page.
+- Fly View shows the live simulated camera feed.
+- Fly View shows the camera tools panel.
+- Fly View shows the gimbal toolbar indicator with pitch/yaw values.
+- The gimbal follows ROI and MAVProxy pitch/yaw commands.
+- Evidence was captured as:
+
+```text
+evidence/GimbalControlOnQGC.png
+```
 
 ## Current Blockers And Next Checks
 
