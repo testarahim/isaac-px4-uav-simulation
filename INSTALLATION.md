@@ -1304,7 +1304,9 @@ simulated gimbal device:
 - Once PX4 receives the simulated device information, its gimbal manager starts
   and emits gimbal-v2 manager messages.
 
-The PX4 mount/gimbal defaults used for this path are:
+The PX4 mount/gimbal defaults used for this path are written into the Pegasus
+Iris airframe init file at
+`~/PX4-Autopilot/ROMFS/px4fmu_common/init.d-posix/airframes/10015_gazebo-classic_iris`:
 
 ```bash
 param set-default MNT_MODE_IN 4
