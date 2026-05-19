@@ -720,7 +720,8 @@ mavproxy.py \
     --master=udp:127.0.0.1:14550 \
     --out=udpout:127.0.0.1:14551 \
     --out=udpout:127.0.0.1:14542 \
-    --out=udpout:127.0.0.1:14555
+    --out=udpout:127.0.0.1:14555 \
+    --out=udpout:127.0.0.1:14556
 ```
 
 Documented routing endpoints:
@@ -731,6 +732,7 @@ Documented routing endpoints:
 | QGroundControl explicit MAVProxy output | `udpout:127.0.0.1:14551` |
 | Spare MAVSDK/script output through MAVProxy | `udpout:127.0.0.1:14542` |
 | Gimbal control bridge input | `udpout:127.0.0.1:14555` |
+| QGroundControl camera component helper input | `udpout:127.0.0.1:14556` |
 
 PX4 also publishes a direct onboard MAVLink stream to `127.0.0.1:14540`. The
 MAVProxy spare route intentionally uses `14542` so script and MAVSDK validation
@@ -1453,6 +1455,8 @@ Purpose:
 - Accepts an optional `SIM_ENVIRONMENT` environment variable to select the
   Pegasus scene name (default: `"Default Environment"`).
 - Accepts `SIM_HEADLESS=1` to disable the viewport window.
+- Accepts `SIM_URBAN_ENV=1` to load the collidable urban environment before
+  starting Play (runs `add_urban_environment.py` before the gimbal/video hooks).
 
 Run with:
 
@@ -1471,6 +1475,27 @@ Equivalent to what the GUI previously did:
 The script also registers the `setup_gimbal_video.py` and
 `gimbal_control_bridge.py` hooks before starting the timeline, so the gimbal
 camera and video stream come up automatically without separate `--exec` flags.
+
+### Optional A — Collidable Urban Environment
+
+`scripts/add_urban_environment.py` creates a hybrid urban scene
+under `/World/UrbanEnvironment`.  Implementation notes:
+
+- Utility poles use the committed `assets/urban/electric_pole.usd` asset,
+  normalized at launch to sit on the ground plane at an 8 m height.
+- All other geometry uses USD-native primitive types (`UsdGeom.Cube`,
+  `UsdGeom.Cylinder`, `UsdGeom.Sphere`).
+- Every generated collider prim and pole mesh has `UsdPhysics.CollisionAPI`
+  applied.  No `UsdPhysics.RigidBodyAPI` is applied, so urban objects stay
+  fixed in place when the drone collides with them.
+- The hook is safe to re-run: it removes and recreates only the
+  `/World/UrbanEnvironment` subtree, leaving Pegasus, Iris, gimbal, and video
+  prims untouched.
+- A 10 m clear zone around the drone spawn at `(0, 0, 0)` is kept free of
+  buildings and poles.
+- Asset attribution and procedural colour choices are documented in
+  `assets/urban/SOURCES.md`.
+- No runtime downloads are required.
 
 If a new stage is opened from the GUI while the script is running, a stage-event
 subscription detects it and shuts the simulation loop down cleanly instead of
@@ -1528,7 +1553,10 @@ tmux kill-session -t sim-stack
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
-- The outdoor / urban Isaac Sim environment remains a future optional extension.
+- The collidable outdoor/urban Isaac Sim environment (Optional A) is
+  implemented in `scripts/add_urban_environment.py` using a committed USD pole
+  asset plus procedural USD primitives with `UsdPhysics.CollisionAPI`.  No
+  runtime downloads are required.
 
 ## References
 

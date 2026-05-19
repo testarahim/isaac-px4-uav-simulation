@@ -109,6 +109,7 @@ Optional environment variables:
 | --- | --- | --- |
 | `SIM_ENVIRONMENT` | `Default Environment` | Pegasus scene name |
 | `SIM_HEADLESS` | `0` | Set to `1` to disable the viewport window |
+| `SIM_URBAN_ENV` | `0` | Set to `1` to add the collidable urban environment before Play |
 
 Expected PX4/Pegasus output after the scene is loaded and Play starts:
 
@@ -635,15 +636,102 @@ Curated evidence is stored under `evidence/`:
 | `qgroundcontrol-mavproxy-telemetry.png` | QGroundControl telemetry through explicit MAVProxy endpoint. |
 | `GimbalControlOnQGC.png` | QGroundControl Fly View with video, camera tools, and gimbal toolbar indicator active. |
 
+## Optional Outdoor / Urban Environment
+
+`scripts/add_urban_environment.py` creates a 2×2-block collidable urban scene
+under `/World/UrbanEnvironment`.  Generated primitives and pole meshes have
+`UsdPhysics.CollisionAPI` applied, so the drone can collide with them
+physically.  Urban objects are static: they have no `UsdPhysics.RigidBodyAPI`,
+so they do not move when the drone touches them.
+
+### What is created
+
+| Element | Details |
+| --- | --- |
+| Ground plane | Large asphalt slab, full static collider |
+| Roads | N-S and E-W two-lane roads, 8 m wide, with dashed centre-line lane markings |
+| Sidewalks | 1.5 m raised concrete kerb strips on each road side |
+| Buildings | Up to 20 varied-height boxes (8–24 m) with procedural façade colours |
+| Utility poles | Committed `assets/urban/electric_pole.usd` asset, normalized to 8 m high and spaced 15 m along road edges |
+| Overhead wires | Included in the pole asset; procedural fallback uses thin box spans |
+| Street signs | Red panel on short post at each road intersection |
+| Concrete barriers | 0.9 m safety barriers along road edges |
+
+A 10 m clear zone around the drone spawn at `(0, 0, 0)` is kept free of
+buildings and poles.
+
+### Launch commands
+
+#### Option 1 — `--exec` hook (legacy GUI workflow)
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/add_urban_environment.py
+```
+
+With gimbal and video:
+
+```bash
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
+  --enable pegasus.simulator \
+  --exec /home/test/Desktop/Case-Study/scripts/add_urban_environment.py \
+  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+```
+
+#### Option 2 — standalone launcher (recommended)
+
+```bash
+SIM_URBAN_ENV=1 "$ISAACSIM_PYTHON" /home/test/Desktop/Case-Study/scripts/sim_standalone.py
+```
+
+The `SIM_URBAN_ENV=1` flag tells `sim_standalone.py` to run
+`add_urban_environment.py` before `setup_gimbal_video.py` and
+`gimbal_control_bridge.py`.  The urban prims are created before `Play` starts,
+so the physics scene initialises with them in place.
+
+### Collision behaviour
+
+- `UsdPhysics.CollisionAPI` is applied to generated primitives and pole meshes.
+  No `UsdPhysics.RigidBodyAPI` is set, so urban objects are static colliders.
+- USD primitive types (`Cube`, `Cylinder`, `Sphere`) use their exact shape for
+  collision; no mesh approximation is required.
+- The Pegasus/Iris vehicle, gimbal assembly, and camera prims under
+  `/World/quadrotor` are never touched by this script.
+
+### Asset notes
+
+Utility poles use the committed `assets/urban/electric_pole.usd` Sketchfab
+asset, with attribution documented in
+[assets/urban/SOURCES.md](assets/urban/SOURCES.md).  The script inspects the
+asset bounds at launch, recentres it, converts it from the source up-axis to
+the stage up-axis, and scales it to the configured 8 m pole height.
+
+If the USD asset is absent or cannot be inspected, the script falls back to
+procedural cylinder poles and box wire spans.  All other geometry (ground,
+roads, sidewalks, buildings, signs, barriers) is procedural and requires no
+download.
+
+### Validation checklist
+
+- [ ] Syntax check: `python3 -m py_compile scripts/add_urban_environment.py`
+- [ ] `/World/UrbanEnvironment` exists in the stage after launch.
+- [ ] Re-running the hook replaces only `/World/UrbanEnvironment`; Pegasus and
+      gimbal prims are untouched.
+- [ ] Roads, buildings, and props are visible from the gimbal camera viewport.
+- [ ] Drone can contact/collide with generated urban objects (collision
+      response visible when vehicle is flown into a building).
+
 ## Known Limitations
 
 - Isaac Sim compatibility check reports the RTX 3070 VRAM as below the 10 GB
   requirement, although first launch and the required workflow were validated.
 - The persistent Pegasus extension path could not be added through the Isaac Sim
   Extensions UI, so `--ext-folder` is used at launch time.
-- The urban environment optional task remains pending future work. The
-  read-only MAVSDK client, Isaac Sim gimbal camera attachment, QGroundControl
-  video helper, and gimbal control from QGC are implemented and validated.
+- The read-only MAVSDK client, Isaac Sim gimbal camera attachment,
+  QGroundControl video helper, gimbal control from QGC, and collidable urban
+  environment are all implemented and validated.
 - QGC's Fly View persistent camera/gimbal widget requires a camera component in
   addition to PX4's gimbal manager. Use `scripts/qgc_camera_component_sim.py`
   for that UI path. Map ROI, mission ROI, and MAVProxy direct pitch/yaw remain

@@ -19,6 +19,7 @@ from isaacsim import SimulationApp
 
 ENVIRONMENT = os.environ.get("SIM_ENVIRONMENT", "Default Environment")
 HEADLESS = os.environ.get("SIM_HEADLESS", "0") == "1"
+URBAN_ENV = os.environ.get("SIM_URBAN_ENV", "0") == "1"
 
 simulation_app = SimulationApp({
     "headless": HEADLESS,
@@ -33,7 +34,9 @@ import runpy
 from pathlib import Path
 
 import omni.timeline
+import omni.usd
 from omni.isaac.core.world import World
+from pxr import Gf, UsdGeom, UsdLux
 from scipy.spatial.transform import Rotation
 
 from pegasus.simulator.params import ROBOTS, SIMULATION_ENVIRONMENTS
@@ -45,6 +48,20 @@ from pegasus.simulator.logic.vehicles.multirotor import Multirotor, MultirotorCo
 from pegasus.simulator.logic.interface.pegasus_interface import PegasusInterface
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+
+
+def _setup_default_lighting(stage):
+    """Add a dome light + directional sun equivalent to Isaac Sim's Default light rig."""
+    dome = UsdLux.DomeLight.Define(stage, "/World/Lights/DomeLight")
+    dome.CreateIntensityAttr(300.0)
+    dome.CreateColorAttr(Gf.Vec3f(1.0, 1.0, 1.0))
+    UsdGeom.Xformable(dome.GetPrim()).AddRotateXYZOp().Set(Gf.Vec3f(270.0, 0.0, 0.0))
+
+    sun = UsdLux.DistantLight.Define(stage, "/World/Lights/SunLight")
+    sun.CreateIntensityAttr(2000.0)
+    sun.CreateAngleAttr(0.53)
+    UsdGeom.Xformable(sun.GetPrim()).AddRotateXYZOp().Set(Gf.Vec3f(-45.0, 0.0, 45.0))
+    print("[sim_standalone] Default lighting applied (dome + sun)")
 
 
 class SimApp:
@@ -76,6 +93,15 @@ class SimApp:
         )
 
         self.world.reset()
+
+        # Apply Default light rig equivalent — dome + sun, always on.
+        _setup_default_lighting(omni.usd.get_context().get_stage())
+
+        # Optional collidable urban environment — registered before Play so the
+        # USD prims exist when the physics scene initialises.
+        if URBAN_ENV:
+            print("[sim_standalone] Registering urban environment hook")
+            runpy.run_path(str(SCRIPT_DIR / "add_urban_environment.py"))
 
         # Register gimbal camera + video stream + control bridge hooks.
         # Each script uses asyncio.ensure_future() and waits internally for its

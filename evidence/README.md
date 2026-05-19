@@ -13,6 +13,7 @@ working parts of the setup.
 | `qgc-manual-link-settings-14551.png` | QGroundControl manual UDP link settings for the explicit MAVProxy endpoint on port `14551`. | Captured |
 | `qgroundcontrol-mavproxy-telemetry.png` | QGroundControl connected through the explicit MAVProxy UDP link at `127.0.0.1:14551`, with the vehicle visible in Fly View. | Captured |
 | `GimbalControlOnQGC.png` | QGroundControl Fly View showing the simulated video feed, camera tools panel, and active gimbal toolbar indicator. | Captured |
+| `urban-environment.png` | Isaac Sim viewport showing the collidable urban environment: roads, buildings, poles, wires, and barriers. | Captured |
 
 ## Notes
 
@@ -21,3 +22,5 @@ working parts of the setup.
   in this directory.
 - The optional QGroundControl video and gimbal UI workflow is represented by
   `GimbalControlOnQGC.png`.
+- The optional urban environment workflow is represented by
+  `urban-environment.png`.

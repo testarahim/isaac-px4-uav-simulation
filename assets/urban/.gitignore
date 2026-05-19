@@ -1,0 +1,6 @@
+# Raw/downloaded asset sources — not committed to git.
+# The runtime-ready electric_pole.usd is committed so the sim works without
+# requiring a login-gated manual download.
+electric-pole.zip
+electric_pole_src/
+textures/

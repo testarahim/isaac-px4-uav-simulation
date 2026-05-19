@@ -6,9 +6,8 @@ Isaac Sim, Pegasus Simulator, PX4 SITL, MAVProxy, and QGroundControl.
 The required challenge scope is implemented first: installation notes, PX4 and
 Pegasus integration, explicit MAVProxy routing, QGroundControl telemetry through
 MAVProxy, and basic verification scripts. Optional extensions for MAVSDK,
-gimbal control, QGroundControl video, and QGroundControl camera/gimbal UI
-discovery are also implemented. The outdoor/urban environment remains future
-work.
+gimbal control, QGroundControl video, QGroundControl camera/gimbal UI discovery,
+and a collidable outdoor/urban Isaac Sim environment are all implemented.
 
 ## Documentation
 
@@ -31,6 +30,16 @@ Required challenge items:
 | QGroundControl through explicit MAVProxy endpoint | Complete | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) |
 | Basic automation / verification | Complete | [scripts/verify_mavlink_route.sh](scripts/verify_mavlink_route.sh), [scripts/verify_mavlink_live.py](scripts/verify_mavlink_live.py), [scripts/report_preflight_status.py](scripts/report_preflight_status.py) |
 | Run instructions | Complete | [RUNBOOK.md](RUNBOOK.md) |
+
+Optional items:
+
+| Optional Item | Status | Notes |
+| --- | --- | --- |
+| Outdoor / urban Isaac Sim environment | Complete | [scripts/add_urban_environment.py](scripts/add_urban_environment.py) — collidable static urban obstacles via `UsdPhysics.CollisionAPI` |
+| Gimbal camera | Complete | [scripts/add_gimbal_camera.py](scripts/add_gimbal_camera.py) |
+| QGroundControl video stream | Complete | [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) |
+| Gimbal control from QGroundControl | Complete | [scripts/gimbal_control_bridge.py](scripts/gimbal_control_bridge.py) |
+| Read-only MAVSDK client | Complete | [scripts/mavsdk_status_client.py](scripts/mavsdk_status_client.py) |
 
 ## MAVLink Routing
 
@@ -87,7 +96,9 @@ Gimbal Sim, and QGroundControl — and starts everything automatically. The
 | Script | Purpose |
 | --- | --- |
 | [launch_stack.sh](launch_stack.sh) | Single-command launcher. Opens a tmux session with Isaac Sim, MAVProxy, Camera Sim, Gimbal Sim, and QGroundControl each in their own window. |
-| [scripts/sim_standalone.py](scripts/sim_standalone.py) | Standalone Isaac Sim launcher that replaces the manual Load Scene → Load Vehicle → Play GUI workflow. Accepts `SIM_ENVIRONMENT` and `SIM_HEADLESS` environment variables. |
+| [scripts/sim_standalone.py](scripts/sim_standalone.py) | Standalone Isaac Sim launcher that replaces the manual Load Scene → Load Vehicle → Play GUI workflow. Accepts `SIM_ENVIRONMENT`, `SIM_HEADLESS`, and `SIM_URBAN_ENV` environment variables. |
+| [scripts/add_urban_environment.py](scripts/add_urban_environment.py) | Isaac Sim `--exec` hook that creates a 2×2-block collidable urban scene under `/World/UrbanEnvironment`. Adds roads, sidewalks, buildings, committed USD utility poles, street signs, and concrete barriers as static `UsdPhysics.CollisionAPI` colliders. Leaves a clear zone around the drone spawn. |
+| [scripts/convert_pole_fbx.py](scripts/convert_pole_fbx.py) | Optional maintenance helper that converts a local raw Sketchfab FBX source into `assets/urban/electric_pole.usd` with embedded textures. Normal users do not need to run it because the runtime USD is committed. |
 
 ## Verification Scripts
 
@@ -119,6 +130,7 @@ Curated screenshots are stored in [evidence/](evidence/):
 | [evidence/qgc-manual-link-settings-14551.png](evidence/qgc-manual-link-settings-14551.png) | QGroundControl manual UDP link configured for the explicit MAVProxy port `14551`. |
 | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) | QGroundControl telemetry through the explicit MAVProxy endpoint. |
 | [evidence/GimbalControlOnQGC.png](evidence/GimbalControlOnQGC.png) | QGroundControl Fly View with video, camera tools, and the gimbal toolbar indicator active. |
+| [evidence/urban-environment.png](evidence/urban-environment.png) | Isaac Sim viewport showing the collidable urban environment. |
 
 ### Screenshot Previews
 
@@ -146,6 +158,10 @@ QGroundControl gimbal/camera UI:
 
 ![QGroundControl gimbal control](evidence/GimbalControlOnQGC.png)
 
+Urban Isaac Sim environment:
+
+![Urban Isaac Sim environment](evidence/urban-environment.png)
+
 A screencast is not required for the current required scope because the
 repository already includes screenshots plus command/script validation outputs.
 For the optional gimbal/video workflow, a short screencast is still useful as
@@ -164,8 +180,6 @@ the default PX4/Pegasus Iris configuration.
   Extensions UI, so the extension is passed at launch time with `--ext-folder`.
 - QGroundControl AutoConnect should be disabled and QGroundControl restarted
   before validating the explicit MAVProxy route.
-- The outdoor / urban Isaac Sim environment remains the only optional task not
-  implemented in this repository.
 
 ## Optional Work
 
@@ -173,7 +187,7 @@ Optional challenge items:
 
 | Optional item | Status |
 | --- | --- |
-| Outdoor / urban Isaac Sim environment | Pending |
+| Outdoor / urban Isaac Sim environment | Complete; collidable static USD scene, screenshot still pending |
 | Gimbal and camera | Complete |
 | Camera video in QGroundControl | Implemented; uses `capture_on_play=True` (lockstep-safe, no `step_async`) |
 | Gimbal control from QGroundControl | Complete; ROI, MAVProxy pitch/yaw, and Fly View gimbal UI validated |

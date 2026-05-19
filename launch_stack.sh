@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Launch the full simulation support stack in separate gnome-terminal tabs.
+# Launch the full simulation support stack in a tmux session.
 #
-# Run AFTER Isaac Sim is open and the vehicle simulation is playing.
+# This starts Isaac Sim through scripts/sim_standalone.py plus MAVProxy,
+# the camera helper, the gimbal helper, and QGroundControl.
 #
 # Usage:
 #   ./launch_stack.sh
