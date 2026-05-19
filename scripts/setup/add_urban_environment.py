@@ -5,7 +5,7 @@ Run as an Isaac Sim --exec hook or from the Script Editor:
 
     isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
       --enable pegasus.simulator \
-      --exec /home/test/Desktop/Case-Study/scripts/add_urban_environment.py
+      --exec /home/test/Desktop/Case-Study/scripts/setup/add_urban_environment.py
 
 The hook creates /World/UrbanEnvironment with roads, sidewalks, buildings,
 utility poles, overhead wires, street signs, and concrete barriers.  All
@@ -27,7 +27,7 @@ import omni.usd
 # ---------------------------------------------------------------------------
 # Prefer the committed runtime USD. Falls back to a local USDZ only if someone
 # has a source asset nearby while developing.
-_ASSET_ROOT = Path(__file__).resolve().parent.parent / "assets" / "urban"
+_ASSET_ROOT = Path(__file__).resolve().parents[2] / "assets" / "urban"
 POLE_ASSET = _ASSET_ROOT / "electric_pole.usd"
 if not POLE_ASSET.exists():
     POLE_ASSET = _ASSET_ROOT / "electric_pole.usdz"

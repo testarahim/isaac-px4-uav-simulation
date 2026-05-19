@@ -30,7 +30,7 @@ link, so this helper mirrors the QGC-facing information/status messages to
 127.0.0.1:14551 by default.
 
 Run while PX4, MAVProxy, and QGC are all running:
-    python3 scripts/gimbal_device_sim.py
+    python3 scripts/sim/gimbal_device_sim.py
 """
 
 import math

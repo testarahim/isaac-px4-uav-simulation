@@ -6,7 +6,7 @@ Replaces the manual GUI workflow:
 
 Run with:
     source configs/isaacsim_env.sh
-    "$ISAACSIM_PYTHON" scripts/sim_standalone.py
+    "$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py
 
 Environment variables (all optional):
     SIM_ENVIRONMENT   Pegasus scene name  (default: "Default Environment")
@@ -48,6 +48,7 @@ from pegasus.simulator.logic.vehicles.multirotor import Multirotor, MultirotorCo
 from pegasus.simulator.logic.interface.pegasus_interface import PegasusInterface
 
 SCRIPT_DIR = Path(__file__).resolve().parent
+SCRIPTS_ROOT = SCRIPT_DIR.parent
 
 
 def _setup_default_lighting(stage):
@@ -101,13 +102,13 @@ class SimApp:
         # USD prims exist when the physics scene initialises.
         if URBAN_ENV:
             print("[sim_standalone] Registering urban environment hook")
-            runpy.run_path(str(SCRIPT_DIR / "add_urban_environment.py"))
+            runpy.run_path(str(SCRIPTS_ROOT / "setup" / "add_urban_environment.py"))
 
         # Register gimbal camera + video stream + control bridge hooks.
         # Each script uses asyncio.ensure_future() and waits internally for its
         # USD prims to appear, so they are safe to register before play().
         print("[sim_standalone] Registering gimbal/video hooks")
-        runpy.run_path(str(SCRIPT_DIR / "setup_gimbal_video.py"))
+        runpy.run_path(str(SCRIPTS_ROOT / "setup" / "setup_gimbal_video.py"))
         runpy.run_path(str(SCRIPT_DIR / "gimbal_control_bridge.py"))
 
     def _on_stage_event(self, event) -> None:

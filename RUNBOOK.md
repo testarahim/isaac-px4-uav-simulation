@@ -44,10 +44,10 @@ This opens a tmux session named `sim-stack` with:
 
 | Window | Service |
 | --- | --- |
-| `0: Isaac Sim` | `scripts/sim_standalone.py`; loads Pegasus scene, spawns Iris, starts Play |
+| `0: Isaac Sim` | `scripts/sim/sim_standalone.py`; loads Pegasus scene, spawns Iris, starts Play |
 | `1: MAVProxy` | `configs/run_mavproxy.sh`; routes MAVLink to QGC and helpers |
-| `2: Camera Sim` | `scripts/qgc_camera_component_sim.py`; QGC camera discovery |
-| `3: Gimbal Sim` | `scripts/gimbal_device_sim.py`; PX4/QGC gimbal-v2 helper |
+| `2: Camera Sim` | `scripts/sim/qgc_camera_component_sim.py`; QGC camera discovery |
+| `3: Gimbal Sim` | `scripts/sim/gimbal_device_sim.py`; PX4/QGC gimbal-v2 helper |
 | `4: QGroundControl` | Opens QGroundControl AppImage |
 
 tmux controls:
@@ -94,7 +94,7 @@ Use this when debugging one component at a time.
 Terminal 1, Isaac Sim/Pegasus:
 
 ```bash
-"$ISAACSIM_PYTHON" scripts/sim_standalone.py
+"$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py
 ```
 
 Useful environment variables:
@@ -122,13 +122,13 @@ bash configs/run_mavproxy.sh
 Terminal 3, QGroundControl camera component:
 
 ```bash
-python3 scripts/qgc_camera_component_sim.py
+python3 scripts/sim/qgc_camera_component_sim.py
 ```
 
 Terminal 4, simulated gimbal device:
 
 ```bash
-python3 scripts/gimbal_device_sim.py
+python3 scripts/sim/gimbal_device_sim.py
 ```
 
 Terminal 5, QGroundControl:
@@ -179,7 +179,7 @@ The executable MAVProxy route is [configs/run_mavproxy.sh](configs/run_mavproxy.
 Baseline local configuration check:
 
 ```bash
-scripts/verify_mavlink_route.sh
+scripts/verify/verify_mavlink_route.sh
 ```
 
 Expected summary:
@@ -191,19 +191,19 @@ Summary: 0 failure(s), 0 warning(s)
 Live MAVLink telemetry check while the stack is running:
 
 ```bash
-scripts/verify_mavlink_live.py
+scripts/verify/verify_mavlink_live.py
 ```
 
 Read-only preflight/status snapshot:
 
 ```bash
-scripts/report_preflight_status.py
+scripts/verify/report_preflight_status.py
 ```
 
 Optional read-only MAVSDK client on the spare route:
 
 ```bash
-scripts/mavsdk_status_client.py
+scripts/verify/mavsdk_status_client.py
 ```
 
 These verification scripts do not arm, take off, change modes, or move the
@@ -216,8 +216,8 @@ The standalone launcher is preferred. If you need the older Isaac Sim GUI flow:
 ```bash
 isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
   --enable pegasus.simulator \
-  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
-  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+  --exec /home/test/Desktop/Case-Study/scripts/setup/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/sim/gimbal_control_bridge.py
 ```
 
 Then in the Pegasus panel:
@@ -227,7 +227,7 @@ Then in the Pegasus panel:
 3. Press Play.
 
 To add the urban environment in this flow, include
-`--exec /home/test/Desktop/Case-Study/scripts/add_urban_environment.py` before
+`--exec /home/test/Desktop/Case-Study/scripts/setup/add_urban_environment.py` before
 the gimbal/video hooks.
 
 ## Common Checks
@@ -240,14 +240,14 @@ If QGroundControl shows no vehicle:
 
 If QGroundControl shows no video:
 
-- Confirm `scripts/qgc_camera_component_sim.py` is running.
+- Confirm `scripts/sim/qgc_camera_component_sim.py` is running.
 - Confirm Isaac Sim is in Play.
 - Confirm QGroundControl video source is `UDP h.264 Video Stream` on port `5600`.
 
 If the gimbal toolbar does not appear:
 
-- Confirm `scripts/gimbal_device_sim.py` and
-  `scripts/qgc_camera_component_sim.py` are both running.
+- Confirm `scripts/sim/gimbal_device_sim.py` and
+  `scripts/sim/qgc_camera_component_sim.py` are both running.
 - Restart QGroundControl or disconnect/reconnect the manual UDP link so
   discovery runs again.
 
@@ -255,7 +255,7 @@ If the urban environment is missing:
 
 - For direct launch, start with `SIM_URBAN_ENV=1 ./launch_stack.sh`.
 - For manual launch, start Isaac with
-  `SIM_URBAN_ENV=1 "$ISAACSIM_PYTHON" scripts/sim_standalone.py`.
+  `SIM_URBAN_ENV=1 "$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py`.
 - In Isaac Sim, check for `/World/UrbanEnvironment`.
 
 ## Evidence To Check

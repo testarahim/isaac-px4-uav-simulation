@@ -865,7 +865,7 @@ A narrow, non-invasive verification script was added for repeatable setup
 checks:
 
 ```bash
-scripts/verify_mavlink_route.sh
+scripts/verify/verify_mavlink_route.sh
 ```
 
 Purpose:
@@ -893,7 +893,7 @@ Usage:
 
 ```bash
 cd /home/test/Desktop/Case-Study
-scripts/verify_mavlink_route.sh
+scripts/verify/verify_mavlink_route.sh
 ```
 
 Expected result:
@@ -913,7 +913,7 @@ Interpretation:
 A second verification script was added for the running simulator stack:
 
 ```bash
-scripts/verify_mavlink_live.py
+scripts/verify/verify_mavlink_live.py
 ```
 
 Purpose:
@@ -947,7 +947,7 @@ Usage from another terminal:
 
 ```bash
 cd /home/test/Desktop/Case-Study
-scripts/verify_mavlink_live.py
+scripts/verify/verify_mavlink_live.py
 ```
 
 Default listener endpoint:
@@ -959,7 +959,7 @@ udpin:127.0.0.1:14551
 Optional arguments:
 
 ```bash
-scripts/verify_mavlink_live.py --endpoint udpin:127.0.0.1:14551 --timeout 20
+scripts/verify/verify_mavlink_live.py --endpoint udpin:127.0.0.1:14551 --timeout 20
 ```
 
 Expected behavior:
@@ -1025,7 +1025,7 @@ A read-only preflight/status reporting script was added as the next step before
 any command-level testing:
 
 ```bash
-scripts/report_preflight_status.py
+scripts/verify/report_preflight_status.py
 ```
 
 Purpose:
@@ -1051,13 +1051,13 @@ Usage with the simulator stack already running:
 
 ```bash
 cd /home/test/Desktop/Case-Study
-scripts/report_preflight_status.py
+scripts/verify/report_preflight_status.py
 ```
 
 Optional arguments:
 
 ```bash
-scripts/report_preflight_status.py --endpoint udpin:127.0.0.1:14542 --timeout 30
+scripts/verify/report_preflight_status.py --endpoint udpin:127.0.0.1:14542 --timeout 30
 ```
 
 Observed validation result:
@@ -1121,7 +1121,7 @@ Interpretation:
 A true MAVSDK Python client was added for the optional spare-port workflow:
 
 ```bash
-scripts/mavsdk_status_client.py
+scripts/verify/mavsdk_status_client.py
 ```
 
 Purpose:
@@ -1154,13 +1154,13 @@ Usage with the simulator stack already running:
 
 ```bash
 cd /home/test/Desktop/Case-Study
-scripts/mavsdk_status_client.py
+scripts/verify/mavsdk_status_client.py
 ```
 
 Optional arguments:
 
 ```bash
-scripts/mavsdk_status_client.py --endpoint udpin://0.0.0.0:14542 --timeout 30
+scripts/verify/mavsdk_status_client.py --endpoint udpin://0.0.0.0:14542 --timeout 30
 ```
 
 Expected behavior:
@@ -1178,7 +1178,7 @@ An optional Isaac Sim helper script was added to attach a gimbal-mounted camera
 to the Pegasus Iris vehicle and render the environment from that camera:
 
 ```bash
-scripts/add_gimbal_camera.py
+scripts/setup/add_gimbal_camera.py
 ```
 
 Purpose:
@@ -1198,7 +1198,7 @@ Usage:
 4. Run:
 
 ```python
-exec(open("/home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py").read())
+exec(open("/home/test/Desktop/Case-Study/scripts/setup/add_gimbal_camera.py").read())
 ```
 
 The same helper can also be started at Isaac Sim launch time with Kit `--exec`;
@@ -1206,7 +1206,7 @@ it waits for the Iris body prim and attaches the gimbal after the vehicle is
 loaded:
 
 ```bash
-isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/add_gimbal_camera.py
+isaac_run --ext-folder /home/test/PegasusSimulator/extensions --enable pegasus.simulator --exec /home/test/Desktop/Case-Study/scripts/setup/add_gimbal_camera.py
 ```
 
 Expected result:
@@ -1236,8 +1236,8 @@ After the visual gimbal camera attachment was working, a QGroundControl video
 path was added:
 
 ```bash
-scripts/stream_gimbal_camera_to_qgc.py
-scripts/setup_gimbal_video.py
+scripts/sim/stream_gimbal_camera_to_qgc.py
+scripts/setup/setup_gimbal_video.py
 ```
 
 Implementation notes:
@@ -1275,7 +1275,7 @@ One-command Isaac Sim launch hook:
 ```bash
 isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
   --enable pegasus.simulator \
-  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py
+  --exec /home/test/Desktop/Case-Study/scripts/setup/setup_gimbal_video.py
 ```
 
 Expected result:
@@ -1289,8 +1289,8 @@ Expected result:
 After video streaming, MAVLink gimbal control was added with:
 
 ```bash
-scripts/gimbal_device_sim.py
-scripts/gimbal_control_bridge.py
+scripts/sim/gimbal_device_sim.py
+scripts/sim/gimbal_control_bridge.py
 ```
 
 PX4 SITL does not provide real gimbal hardware, so the workflow needs a
@@ -1332,8 +1332,8 @@ The complete gimbal-control launch path with video is:
 ```bash
 isaac_run --ext-folder /home/test/PegasusSimulator/extensions \
   --enable pegasus.simulator \
-  --exec /home/test/Desktop/Case-Study/scripts/setup_gimbal_video.py \
-  --exec /home/test/Desktop/Case-Study/scripts/gimbal_control_bridge.py
+  --exec /home/test/Desktop/Case-Study/scripts/setup/setup_gimbal_video.py \
+  --exec /home/test/Desktop/Case-Study/scripts/sim/gimbal_control_bridge.py
 ```
 
 Expected gimbal simulator output:
@@ -1365,7 +1365,7 @@ The final step was enabling QGroundControl's camera/gimbal UI rather than only
 ROI and MAVProxy command control. This was added with:
 
 ```bash
-scripts/qgc_camera_component_sim.py
+scripts/sim/qgc_camera_component_sim.py
 ```
 
 Camera component behavior:
@@ -1387,7 +1387,7 @@ http://127.0.0.1:8011/qgc-camera-definition.xml
 The camera helper runs beside the PX4/MAVProxy/QGroundControl stack:
 
 ```bash
-python3 /home/test/Desktop/Case-Study/scripts/qgc_camera_component_sim.py
+python3 /home/test/Desktop/Case-Study/scripts/sim/qgc_camera_component_sim.py
 ```
 
 Expected output:
@@ -1443,7 +1443,7 @@ To remove the manual Load Scene → Load Vehicle → Play GUI steps, a standalon
 Python script was added:
 
 ```bash
-scripts/sim_standalone.py
+scripts/sim/sim_standalone.py
 ```
 
 Purpose:
@@ -1461,7 +1461,7 @@ Purpose:
 Run with:
 
 ```bash
-"$ISAACSIM_PYTHON" scripts/sim_standalone.py
+"$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py
 ```
 
 Equivalent to what the GUI previously did:
@@ -1478,7 +1478,7 @@ camera and video stream come up automatically without separate `--exec` flags.
 
 ### Optional A — Collidable Urban Environment
 
-`scripts/add_urban_environment.py` creates a hybrid urban scene
+`scripts/setup/add_urban_environment.py` creates a hybrid urban scene
 under `/World/UrbanEnvironment`.  Implementation notes:
 
 - Utility poles use the committed `assets/urban/electric_pole.usd` asset,
@@ -1519,10 +1519,10 @@ The launcher creates a tmux session named `sim-stack` with five windows:
 
 | Window | Command |
 | --- | --- |
-| `Isaac Sim` | `"$ISAACSIM_PYTHON" scripts/sim_standalone.py` |
+| `Isaac Sim` | `"$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py` |
 | `MAVProxy` | `bash configs/run_mavproxy.sh` |
-| `Camera Sim` | `python3 scripts/qgc_camera_component_sim.py` |
-| `Gimbal Sim` | `python3 scripts/gimbal_device_sim.py` |
+| `Camera Sim` | `python3 scripts/sim/qgc_camera_component_sim.py` |
+| `Gimbal Sim` | `python3 scripts/sim/gimbal_device_sim.py` |
 | `QGroundControl` | `~/Downloads/QGroundControl-x86_64.AppImage` |
 
 Usage:
@@ -1554,7 +1554,7 @@ tmux kill-session -t sim-stack
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
 - The collidable outdoor/urban Isaac Sim environment (Optional A) is
-  implemented in `scripts/add_urban_environment.py` using a committed USD pole
+  implemented in `scripts/setup/add_urban_environment.py` using a committed USD pole
   asset plus procedural USD primitives with `UsdPhysics.CollisionAPI`.  No
   runtime downloads are required.
 

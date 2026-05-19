@@ -28,18 +28,18 @@ Required challenge items:
 | Basic PX4 + Pegasus simulation | Complete | PX4/Pegasus heartbeat and telemetry documented in [INSTALLATION.md](INSTALLATION.md) |
 | MAVProxy routing | Complete | [configs/run_mavproxy.sh](configs/run_mavproxy.sh) |
 | QGroundControl through explicit MAVProxy endpoint | Complete | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) |
-| Basic automation / verification | Complete | [scripts/verify_mavlink_route.sh](scripts/verify_mavlink_route.sh), [scripts/verify_mavlink_live.py](scripts/verify_mavlink_live.py), [scripts/report_preflight_status.py](scripts/report_preflight_status.py) |
+| Basic automation / verification | Complete | [scripts/verify/verify_mavlink_route.sh](scripts/verify/verify_mavlink_route.sh), [scripts/verify/verify_mavlink_live.py](scripts/verify/verify_mavlink_live.py), [scripts/verify/report_preflight_status.py](scripts/verify/report_preflight_status.py) |
 | Run instructions | Complete | [RUNBOOK.md](RUNBOOK.md) |
 
 Optional items:
 
 | Optional Item | Status | Notes |
 | --- | --- | --- |
-| Outdoor / urban Isaac Sim environment | Complete | [scripts/add_urban_environment.py](scripts/add_urban_environment.py) — collidable static urban obstacles via `UsdPhysics.CollisionAPI` |
-| Gimbal camera | Complete | [scripts/add_gimbal_camera.py](scripts/add_gimbal_camera.py) |
-| QGroundControl video stream | Complete | [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) |
-| Gimbal control from QGroundControl | Complete | [scripts/gimbal_control_bridge.py](scripts/gimbal_control_bridge.py) |
-| Read-only MAVSDK client | Complete | [scripts/mavsdk_status_client.py](scripts/mavsdk_status_client.py) |
+| Outdoor / urban Isaac Sim environment | Complete | [scripts/setup/add_urban_environment.py](scripts/setup/add_urban_environment.py) — collidable static urban obstacles via `UsdPhysics.CollisionAPI` |
+| Gimbal camera | Complete | [scripts/setup/add_gimbal_camera.py](scripts/setup/add_gimbal_camera.py) |
+| QGroundControl video stream | Complete | [scripts/setup/setup_gimbal_video.py](scripts/setup/setup_gimbal_video.py) |
+| Gimbal control from QGroundControl | Complete | [scripts/sim/gimbal_control_bridge.py](scripts/sim/gimbal_control_bridge.py) |
+| Read-only MAVSDK client | Complete | [scripts/verify/mavsdk_status_client.py](scripts/verify/mavsdk_status_client.py) |
 
 ## MAVLink Routing
 
@@ -83,36 +83,36 @@ Gimbal Sim, and QGroundControl — and starts everything automatically. The
 ### Manual launch (step by step)
 
 1. Complete the one-time shell setup in [RUNBOOK.md](RUNBOOK.md).
-2. Run `"$ISAACSIM_PYTHON" scripts/sim_standalone.py` — loads the scene,
+2. Run `"$ISAACSIM_PYTHON" scripts/sim/sim_standalone.py` — loads the scene,
    spawns the Iris vehicle, and presses Play automatically.
 3. Start MAVProxy with [configs/run_mavproxy.sh](configs/run_mavproxy.sh).
-4. Start the gimbal device simulator: `python3 scripts/gimbal_device_sim.py`.
-5. Start the camera component simulator: `python3 scripts/qgc_camera_component_sim.py`.
+4. Start the gimbal device simulator: `python3 scripts/sim/gimbal_device_sim.py`.
+5. Start the camera component simulator: `python3 scripts/sim/qgc_camera_component_sim.py`.
 6. Launch QGroundControl and connect to the explicit UDP link at `127.0.0.1:14551`.
-7. Run the verification scripts from `scripts/`.
+7. Run the verification scripts from `scripts/verify/`.
 
 ## Launch Scripts
 
 | Script | Purpose |
 | --- | --- |
 | [launch_stack.sh](launch_stack.sh) | Single-command launcher. Opens a tmux session with Isaac Sim, MAVProxy, Camera Sim, Gimbal Sim, and QGroundControl each in their own window. |
-| [scripts/sim_standalone.py](scripts/sim_standalone.py) | Standalone Isaac Sim launcher that replaces the manual Load Scene → Load Vehicle → Play GUI workflow. Accepts `SIM_ENVIRONMENT`, `SIM_HEADLESS`, and `SIM_URBAN_ENV` environment variables. |
-| [scripts/add_urban_environment.py](scripts/add_urban_environment.py) | Isaac Sim `--exec` hook that creates a 2×2-block collidable urban scene under `/World/UrbanEnvironment`. Adds roads, sidewalks, buildings, committed USD utility poles, street signs, and concrete barriers as static `UsdPhysics.CollisionAPI` colliders. Leaves a clear zone around the drone spawn. |
-| [scripts/convert_pole_fbx.py](scripts/convert_pole_fbx.py) | Optional maintenance helper that converts a local raw Sketchfab FBX source into `assets/urban/electric_pole.usd` with embedded textures. Normal users do not need to run it because the runtime USD is committed. |
+| [scripts/sim/sim_standalone.py](scripts/sim/sim_standalone.py) | Standalone Isaac Sim launcher that replaces the manual Load Scene → Load Vehicle → Play GUI workflow. Accepts `SIM_ENVIRONMENT`, `SIM_HEADLESS`, and `SIM_URBAN_ENV` environment variables. |
+| [scripts/setup/add_urban_environment.py](scripts/setup/add_urban_environment.py) | Isaac Sim `--exec` hook that creates a 2×2-block collidable urban scene under `/World/UrbanEnvironment`. Adds roads, sidewalks, buildings, committed USD utility poles, street signs, and concrete barriers as static `UsdPhysics.CollisionAPI` colliders. Leaves a clear zone around the drone spawn. |
+| [scripts/tools/convert_pole_fbx.py](scripts/tools/convert_pole_fbx.py) | Optional maintenance helper that converts a local raw Sketchfab FBX source into `assets/urban/electric_pole.usd` with embedded textures. Normal users do not need to run it because the runtime USD is committed. |
 
 ## Verification Scripts
 
 | Script | Purpose |
 | --- | --- |
-| [scripts/verify_mavlink_route.sh](scripts/verify_mavlink_route.sh) | Non-invasive baseline check for install paths, PX4 version, and MAVProxy endpoint configuration. |
-| [scripts/verify_mavlink_live.py](scripts/verify_mavlink_live.py) | Live MAVLink heartbeat and telemetry check through the QGroundControl route. |
-| [scripts/report_preflight_status.py](scripts/report_preflight_status.py) | Read-only preflight/status snapshot through the spare MAVSDK/script route. |
-| [scripts/mavsdk_status_client.py](scripts/mavsdk_status_client.py) | Read-only MAVSDK client that connects to the spare port and prints connection state, position, attitude, flight mode, battery, and armed state. |
-| [scripts/stream_gimbal_camera_to_qgc.py](scripts/stream_gimbal_camera_to_qgc.py) | Isaac Sim helper that streams the gimbal-camera render product to QGroundControl as RTP/H.264 over UDP. Uses `capture_on_play=True` so Replicator captures during the normal simulation render pass without extra `step_async()` calls. |
-| [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) | Isaac Sim launch hook that starts both the gimbal camera helper and the offscreen QGroundControl video streamer. |
-| [scripts/gimbal_control_bridge.py](scripts/gimbal_control_bridge.py) | Isaac Sim --exec hook that listens on port 14555 for MAVLink gimbal commands and applies them to the USD gimbal prim each simulation frame. |
-| [scripts/gimbal_device_sim.py](scripts/gimbal_device_sim.py) | Standalone helper that impersonates a MAVLink gimbal device on PX4's gimbal MAVLink instance (13030/13280). It also mirrors the gimbal-v2 discovery/status messages QGroundControl needs on the normal 14551 telemetry link. |
-| [scripts/qgc_camera_component_sim.py](scripts/qgc_camera_component_sim.py) | Standalone MAVLink camera component simulator for QGroundControl. It advertises the RTP/H.264 video stream, serves a small camera definition XML, and associates the camera with the simulated gimbal device so QGC can build its camera tools UI. |
+| [scripts/verify/verify_mavlink_route.sh](scripts/verify/verify_mavlink_route.sh) | Non-invasive baseline check for install paths, PX4 version, and MAVProxy endpoint configuration. |
+| [scripts/verify/verify_mavlink_live.py](scripts/verify/verify_mavlink_live.py) | Live MAVLink heartbeat and telemetry check through the QGroundControl route. |
+| [scripts/verify/report_preflight_status.py](scripts/verify/report_preflight_status.py) | Read-only preflight/status snapshot through the spare MAVSDK/script route. |
+| [scripts/verify/mavsdk_status_client.py](scripts/verify/mavsdk_status_client.py) | Read-only MAVSDK client that connects to the spare port and prints connection state, position, attitude, flight mode, battery, and armed state. |
+| [scripts/sim/stream_gimbal_camera_to_qgc.py](scripts/sim/stream_gimbal_camera_to_qgc.py) | Isaac Sim helper that streams the gimbal-camera render product to QGroundControl as RTP/H.264 over UDP. Uses `capture_on_play=True` so Replicator captures during the normal simulation render pass without extra `step_async()` calls. |
+| [scripts/setup/setup_gimbal_video.py](scripts/setup/setup_gimbal_video.py) | Isaac Sim launch hook that starts both the gimbal camera helper and the offscreen QGroundControl video streamer. |
+| [scripts/sim/gimbal_control_bridge.py](scripts/sim/gimbal_control_bridge.py) | Isaac Sim --exec hook that listens on port 14555 for MAVLink gimbal commands and applies them to the USD gimbal prim each simulation frame. |
+| [scripts/sim/gimbal_device_sim.py](scripts/sim/gimbal_device_sim.py) | Standalone helper that impersonates a MAVLink gimbal device on PX4's gimbal MAVLink instance (13030/13280). It also mirrors the gimbal-v2 discovery/status messages QGroundControl needs on the normal 14551 telemetry link. |
+| [scripts/sim/qgc_camera_component_sim.py](scripts/sim/qgc_camera_component_sim.py) | Standalone MAVLink camera component simulator for QGroundControl. It advertises the RTP/H.264 video stream, serves a small camera definition XML, and associates the camera with the simulated gimbal device so QGC can build its camera tools UI. |
 
 None of the verification scripts arm, take off, change modes, or move the
 vehicle. MAVSDK may perform internal telemetry stream setup over MAVLink, but
@@ -197,20 +197,20 @@ The spare MAVSDK/script route at `127.0.0.1:14542` is configured and validated
 with both a read-only `pymavlink` status script and a read-only MAVSDK client.
 
 The optional gimbal/camera workflow is implemented with
-[scripts/add_gimbal_camera.py](scripts/add_gimbal_camera.py). It attaches a
+[scripts/setup/add_gimbal_camera.py](scripts/setup/add_gimbal_camera.py). It attaches a
 simple gimbal transform hierarchy and camera prim under the Pegasus Iris vehicle
 body, then switches the Isaac Sim viewport to that camera.
 
 The optional QGroundControl video path is implemented with
-[scripts/stream_gimbal_camera_to_qgc.py](scripts/stream_gimbal_camera_to_qgc.py).
+[scripts/sim/stream_gimbal_camera_to_qgc.py](scripts/sim/stream_gimbal_camera_to_qgc.py).
 It creates an offscreen Isaac Sim render product from the gimbal camera and
 sends it to QGroundControl as RTP/H.264 over UDP on port `5600`.
-Use [scripts/setup_gimbal_video.py](scripts/setup_gimbal_video.py) when both the
+Use [scripts/setup/setup_gimbal_video.py](scripts/setup/setup_gimbal_video.py) when both the
 gimbal camera and video streamer should start from a single Isaac Sim `--exec`
 hook.
 
 QGroundControl camera discovery is implemented with
-[scripts/qgc_camera_component_sim.py](scripts/qgc_camera_component_sim.py).
+[scripts/sim/qgc_camera_component_sim.py](scripts/sim/qgc_camera_component_sim.py).
 Start it beside the gimbal device simulator when you want QGroundControl's
 camera tools panel and Fly View gimbal toolbar indicator instead of only
 ROI/MAVProxy gimbal commands.

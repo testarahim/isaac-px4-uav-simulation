@@ -1,7 +1,7 @@
 """
 Standalone FBX -> USD converter for the electric pole asset.
 Run with:
-    "$ISAACSIM_PYTHON" scripts/convert_pole_fbx.py
+    "$ISAACSIM_PYTHON" scripts/tools/convert_pole_fbx.py
 
 Requires Isaac Sim (omni.kit.asset_converter).  Does NOT open a GUI window.
 """
@@ -20,7 +20,7 @@ app = SimulationApp({"headless": True, "renderer": "RayTracedLighting"})
 import carb  # noqa: E402  (must come after SimulationApp)
 import omni.kit.asset_converter as asset_converter  # noqa: E402
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 INPUT_PATH  = REPO_ROOT / "assets" / "urban" / "electric_pole_src" / "source" / "e pole.fbx"
 OUTPUT_PATH = REPO_ROOT / "assets" / "urban" / "electric_pole.usd"
 

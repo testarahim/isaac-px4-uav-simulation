@@ -17,7 +17,7 @@ works without requiring a login-gated manual download. Raw download/source
 files (`electric-pole.zip`, `electric_pole_src/`, and extracted texture folders)
 are local-only and git-ignored.
 
-If the raw FBX source is available locally, `scripts/convert_pole_fbx.py` can
+If the raw FBX source is available locally, `scripts/tools/convert_pole_fbx.py` can
 rebuild `electric_pole.usd` with Isaac Sim's asset converter. This is a
 maintenance path only; normal simulation runs use the committed USD directly.
 

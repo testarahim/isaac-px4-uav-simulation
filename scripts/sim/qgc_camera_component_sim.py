@@ -11,7 +11,7 @@ This helper fills the camera-discovery gap in the Isaac/PX4 SITL workflow:
 
 Run it while MAVProxy and QGroundControl are running:
 
-    python3 scripts/qgc_camera_component_sim.py
+    python3 scripts/sim/qgc_camera_component_sim.py
 """
 
 import argparse

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Launch the full simulation support stack in a tmux session.
 #
-# This starts Isaac Sim through scripts/sim_standalone.py plus MAVProxy,
+# This starts Isaac Sim through scripts/sim/sim_standalone.py plus MAVProxy,
 # the camera helper, the gimbal helper, and QGroundControl.
 #
 # Usage:
@@ -38,7 +38,7 @@ tmux new-session  -d -s "$SESSION" -n "Isaac Sim" \
     -x 220 -y 50
 
 tmux send-keys -t "$SESSION:Isaac Sim" \
-    "\"$ISAACSIM_PYTHON\" '${REPO}/scripts/sim_standalone.py'" Enter
+    "\"$ISAACSIM_PYTHON\" '${REPO}/scripts/sim/sim_standalone.py'" Enter
 
 tmux new-window  -t "$SESSION" -n "MAVProxy"
 tmux send-keys -t "$SESSION:MAVProxy" \
@@ -46,11 +46,11 @@ tmux send-keys -t "$SESSION:MAVProxy" \
 
 tmux new-window  -t "$SESSION" -n "Camera Sim"
 tmux send-keys -t "$SESSION:Camera Sim" \
-    "sleep 2 && python3 '${REPO}/scripts/qgc_camera_component_sim.py'" Enter
+    "sleep 2 && python3 '${REPO}/scripts/sim/qgc_camera_component_sim.py'" Enter
 
 tmux new-window  -t "$SESSION" -n "Gimbal Sim"
 tmux send-keys -t "$SESSION:Gimbal Sim" \
-    "sleep 2 && python3 '${REPO}/scripts/gimbal_device_sim.py'" Enter
+    "sleep 2 && python3 '${REPO}/scripts/sim/gimbal_device_sim.py'" Enter
 
 tmux new-window  -t "$SESSION" -n "QGroundControl"
 tmux send-keys -t "$SESSION:QGroundControl" \
