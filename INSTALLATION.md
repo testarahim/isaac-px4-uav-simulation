@@ -1553,10 +1553,6 @@ tmux kill-session -t sim-stack
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
-- The collidable outdoor/urban Isaac Sim environment (Optional A) is
-  implemented in `scripts/setup/add_urban_environment.py` using a committed USD pole
-  asset plus procedural USD primitives with `UsdPhysics.CollisionAPI`.  No
-  runtime downloads are required.
 
 ## References
 

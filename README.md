@@ -191,7 +191,7 @@ Optional challenge items:
 
 | Optional item | Status |
 | --- | --- |
-| Outdoor / urban Isaac Sim environment | Complete; collidable static USD scene, screenshot still pending |
+| Outdoor / urban Isaac Sim environment | Complete; collidable static USD scene with captured screenshot |
 | Gimbal and camera | Complete |
 | Camera video in QGroundControl | Implemented; uses `capture_on_play=True` (lockstep-safe, no `step_async`) |
 | Gimbal control from QGroundControl | Complete; ROI, MAVProxy pitch/yaw, and Fly View gimbal UI validated |
