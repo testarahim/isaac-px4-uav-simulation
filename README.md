@@ -131,6 +131,15 @@ Curated screenshots are stored in [evidence/](evidence/):
 | [evidence/qgroundcontrol-mavproxy-telemetry.png](evidence/qgroundcontrol-mavproxy-telemetry.png) | QGroundControl telemetry through the explicit MAVProxy endpoint. |
 | [evidence/GimbalControlOnQGC.png](evidence/GimbalControlOnQGC.png) | QGroundControl Fly View with video, camera tools, and the gimbal toolbar indicator active. |
 | [evidence/urban-environment.png](evidence/urban-environment.png) | Isaac Sim viewport showing the collidable urban environment. |
+| [evidence/uav-simulation-demo.webm](evidence/uav-simulation-demo.webm) | Screencast showing the running UAV simulation workflow. |
+
+### Demo Screencast
+
+[Watch the UAV simulation demo screencast](evidence/uav-simulation-demo.webm)
+
+<video src="evidence/uav-simulation-demo.webm" controls width="100%">
+  Your browser can also open the screencast from evidence/uav-simulation-demo.webm.
+</video>
 
 ### Screenshot Previews
 
@@ -161,11 +170,6 @@ QGroundControl gimbal/camera UI:
 Urban Isaac Sim environment:
 
 ![Urban Isaac Sim environment](evidence/urban-environment.png)
-
-A screencast is not required for the current required scope because the
-repository already includes screenshots plus command/script validation outputs.
-For the optional gimbal/video workflow, a short screencast is still useful as
-additional evidence when preparing a final report.
 
 ## PX4 Parameters
 

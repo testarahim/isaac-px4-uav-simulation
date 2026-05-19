@@ -14,6 +14,7 @@ working parts of the setup.
 | `qgroundcontrol-mavproxy-telemetry.png` | QGroundControl connected through the explicit MAVProxy UDP link at `127.0.0.1:14551`, with the vehicle visible in Fly View. | Captured |
 | `GimbalControlOnQGC.png` | QGroundControl Fly View showing the simulated video feed, camera tools panel, and active gimbal toolbar indicator. | Captured |
 | `urban-environment.png` | Isaac Sim viewport showing the collidable urban environment: roads, buildings, poles, wires, and barriers. | Captured |
+| `uav-simulation-demo.webm` | Screencast showing the running UAV simulation workflow. | Captured |
 
 ## Notes
 
@@ -21,6 +22,6 @@ working parts of the setup.
 - Only selected evidence files that support the final submission should be kept
   in this directory.
 - The optional QGroundControl video and gimbal UI workflow is represented by
-  `GimbalControlOnQGC.png`.
+  `GimbalControlOnQGC.png` and `uav-simulation-demo.webm`.
 - The optional urban environment workflow is represented by
   `urban-environment.png`.
