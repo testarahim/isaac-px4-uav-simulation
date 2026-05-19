@@ -1549,7 +1549,7 @@ creating a new one. Kill the old session first if a clean restart is needed:
 tmux kill-session -t sim-stack
 ```
 
-## Current Blockers And Next Checks
+## Current Limitations
 
 - The known hardware limitation remains that the RTX 3070 reports 8.59 GB VRAM
   while Isaac Sim 5.1.0 requires 10 GB.
